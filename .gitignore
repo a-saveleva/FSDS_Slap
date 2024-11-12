@@ -25,6 +25,19 @@ share/python-wheels/
 .installed.cfg
 *.egg
 MANIFEST
+data/
+
+# Data files
+*.csv
+*.xls
+*.xlsx
+*.zip
+*.gz
+*.gzip
+*.feather
+*.geofeather
+*.parquet
+*.geoparquet
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
