@@ -28,7 +28,6 @@ MANIFEST
 data/
 
 # Data files
-*.csv
 *.xls
 *.xlsx
 *.zip
