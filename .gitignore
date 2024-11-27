@@ -28,13 +28,13 @@ MANIFEST
 data/
 
 # Data files
-*.zip
-*.gz
-*.gzip
-*.feather
-*.geofeather
-*.parquet
-*.geoparquet
+#*.zip
+#*.gz
+#*.gzip
+#*.feather
+#*.geofeather
+#*.parquet
+#*.geoparquet
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
