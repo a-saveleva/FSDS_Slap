@@ -36,6 +36,7 @@ data/raw/
 #*.geofeather
 #*.parquet
 #*.geoparquet
+listings.csv
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
