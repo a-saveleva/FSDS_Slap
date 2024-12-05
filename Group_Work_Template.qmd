@@ -20,7 +20,7 @@ format:
       text: |
         \addtokomafont{disposition}{\rmfamily}
     mainfont: Spectral
-    sansfont: "Roboto Flex"
+    sansfont: Roboto Flex
     monofont: InputMonoCondensed
     papersize: a4
     geometry:
@@ -39,56 +39,146 @@ jupyter:
       extension: .qmd
       format_name: quarto
       format_version: '1.0'
-      jupytext_version: 1.15.2
+      jupytext_version: 1.16.4
   kernelspec:
-    display_name: Python 3 (ipykernel)
+    display_name: Python (base)
     language: python
-    name: python3
+    name: base
 ---
 
-## Declaration of Authorship {.unnumbered .unlisted}
-
-We, [insert your group's names], pledge our honour that the work presented in this assessment is our own. Where information has been derived from other sources, we confirm that this has been indicated in the work. Where a Large Language Model such as ChatGPT has been used we confirm that we have made its contribution to the final submission clear.
-
-Date:
-
-Student Numbers: 
-
-## Brief Group Reflection
-
-| What Went Well | What Was Challenging |
-| -------------- | -------------------- |
-| A              | B                    |
-| C              | D                    |
-
-## Priorities for Feedback
-
-Are there any areas on which you would appreciate more detailed feedback if we're able to offer it?
-
-{{< pagebreak >}}
-
-# Response to Questions
-
-See the raw file for examples of how to hide computational output as there is code hidden here.
-
 ```{python}
-#| echo: False
+#| echo: false
 import os
+import numpy as np
 import pandas as pd
+import geopandas as gpd
+import requests
+import zipfile
+import matplotlib.cm as cm
+import matplotlib.pyplot as plt
+from scipy.spatial.distance import pdist, squareform
+from scipy.cluster.hierarchy import fcluster, linkage
+from dateutil.relativedelta import relativedelta
+from datetime import datetime
+from PIL import Image
+from io import BytesIO
+from shapely.geometry import Point
+from urllib.parse import urlparse
+
+pd.set_option('display.max_columns', None)
+pd.options.display.max_colwidth = 200
 ```
 
 ```{python}
-#| echo: False
-host = 'https://orca.casa.ucl.ac.uk'
-path = '~jreades/data'
-file = '20240614-London-listings.parquet'
-
-if os.path.exists(file):
-  df = pd.read_parquet(file)
-else: 
-  df = pd.read_parquet(f'{host}/{path}/{file}')
-  df.to_parquet(file)
+dest = os.path.join('data','raw') #destination to save data
+src  = f"https://data.insideairbnb.com/united-kingdom/england/london/2024-09-06/data/listings.csv.gz"
+url = urlparse(src) # We assume that this is some kind of valid URL 
+fn = (url.path.split('/')[-3])+(url.path.split('/')[-1]) # return the file name with date
+os.path.split(url.path)[-1]
+dfn = os.path.join(dest,fn) # Destination filename
+print(f"Writing to: {fn}")
 ```
+
+```{python}
+dfn
+```
+
+```{python}
+if not os.path.isfile(dfn) or os.stat(dfn).st_size < 250:
+    
+    print(f"{dfn} not found or corrupted, downloading!")
+    path = os.path.split(dest)
+    if len(path) >= 1 and path[0] != '':
+        os.makedirs(os.path.join(*path), exist_ok=True)
+        # Download and save the file
+        try:
+            with open(dfn, "wb") as file:
+                response = get(src)
+                response.raise_for_status()  # Raise an exception for HTTP errors
+                file.write(response.content)
+            print("\tDone downloading.")
+        except Exception as e:
+            print(f"Error while downloading {src}: {e}")
+            return ""
+ 
+    print("\tDone downloading.")
+    f_size = os.stat(dfn).st_size
+    print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+else:
+    print(f"Found {dfn} locally!")
+    f_size = os.stat(dfn).st_size
+    print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+```
+
+```{python}
+#| echo: false
+def cache_data(src:str) -> str:
+    """Downloads and caches a remote file locally.
+    src : str - The remote *source* for the file, any valid URL should work.
+    dest : str - The *destination* location to save the downloaded file.    
+    Returns a string representing the local location of the file.
+    """
+    dest = os.path.join('data','raw') #destination to save data
+    
+    url = urlparse(src) # We assume that this is some kind of valid URL 
+    fn = (url.path.split('/')[-3])+(url.path.split('/')[-1]) # return the file name with date
+    dfn = os.path.join(dest,fn) # Destination filename
+    print(f"Writing to: {fn}")
+
+    if not os.path.isfile(dfn) or os.stat(dfn).st_size < 250:
+        
+        print(f"{dfn} not found or corrupted, downloading!")
+        path = os.path.split(dest)
+        if len(path) >= 1 and path[0] != '':
+            os.makedirs(os.path.join(*path), exist_ok=True)
+            # Download and save the file #os.path.join(*path)
+            try:
+                with open(dfn, "wb") as file:
+                    response = get(src)
+                    response.raise_for_status()  # Raise an exception for HTTP errors
+                    file.write(response.content)
+                print("\tDone downloading.")
+            except Exception as e:
+                print(f"Error while downloading {src}: {e}")
+                return ""
+     
+        print("\tDone downloading.")
+        f_size = os.stat(dfn).st_size
+        print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+    else:
+        print(f"Found {dfn} locally!")
+        f_size = os.stat(dfn).st_size
+        print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+        
+    return dfn
+```
+
+```{python}
+#| echo: false
+# Set download URL for London data the date should be choosen by reviewing 
+# the Inside Airbnb Get Data page and identifying the date of the required data
+airbnbdates  = ["2023-12-10", "2024-09-06"]
+airbnbcols = ['id', 'listing_url', 'picture_url', 'host_id', 'host_listings_count',
+              'host_total_listings_count', 'property_type', 'room_type', 'price', 
+              'minimum_nights', 'maximum_nights', 'availability_365', 
+              'number_of_reviews', 'latitude', 'longitude', 'last_review', 
+              'beds', 'bedrooms']
+airbnbdfs = []
+
+for date in airbnbdates:
+    airbnburl  = f"https://data.insideairbnb.com/united-kingdom/england/london/{date}/data/listings.csv.gz"
+    dfn = cache_data(airbnburl)
+    airbnbdfs.append(pd.read_csv(dfn, low_memory=False,usecols=airbnbcols))
+    #.split('/')[-1]
+    print(f"Data frame from date {date} is {df.shape[0]:,} x {df.shape[1]}")
+
+airbnb_old, airbnb2024_new = airbnbdfs
+```
+
+```{python}
+dfn
+```
+
 
 ## 1. Who collected the InsideAirbnb data?
 
