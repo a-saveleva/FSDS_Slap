@@ -70,44 +70,46 @@ pd.options.display.max_colwidth = 200
 ```
 
 ```{python}
-dest = os.path.join('data','raw') #destination to save data
-src  = f"https://data.insideairbnb.com/united-kingdom/england/london/2024-09-06/data/listings.csv.gz"
-url = urlparse(src) # We assume that this is some kind of valid URL 
-fn = (url.path.split('/')[-3])+(url.path.split('/')[-1]) # return the file name with date
-os.path.split(url.path)[-1]
-dfn = os.path.join(dest,fn) # Destination filename
-print(f"Writing to: {fn}")
+# dest = os.path.join('data','raw') #destination to save data
+# src  = f"https://data.insideairbnb.com/united-kingdom/england/london/2024-09-06/data/listings.csv.gz"
+# url = urlparse(src) # We assume that this is some kind of valid URL 
+# fn = (url.path.split('/')[-3])+(url.path.split('/')[-1]) # return the file name with date
+# os.path.split(url.path)[-1]
+# dfn = os.path.join(dest,fn) # Destination filename
+# print(f"Writing to: {fn}")
 ```
 
 ```{python}
-dfn
+# dfn
 ```
 
 ```{python}
-if not os.path.isfile(dfn) or os.stat(dfn).st_size < 250:
+# if not os.path.isfile(dfn) or os.stat(dfn).st_size < 250:
     
-    print(f"{dfn} not found or corrupted, downloading!")
-    path = os.path.split(dest)
-    if len(path) >= 1 and path[0] != '':
-        os.makedirs(os.path.join(*path), exist_ok=True)
-        # Download and save the file
-        try:
-            with open(dfn, "wb") as file:
-                response = get(src)
-                response.raise_for_status()  # Raise an exception for HTTP errors
-                file.write(response.content)
-            print("\tDone downloading.")
-        except Exception as e:
-            print(f"Error while downloading {src}: {e}")
-            return ""
+#     print(f"{dfn} not found or corrupted, downloading!")
+#     path = os.path.split(dest)
+#     if len(path) >= 1 and path[0] != '':
+#         os.makedirs(os.path.join(*path), exist_ok=True)
+#         # Download and save the file
+#         try:
+#             with open(dfn, "wb") as file:
+#                 response = get(src)
+#                 response.raise_for_status()  # Raise an exception for HTTP errors
+#                 file.write(response.content)
+#             print("\tDone downloading.")
+#         except Exception as e:
+#             print(f" {src}: {e}")
+#             return ""
  
-    print("\tDone downloading.")
-    f_size = os.stat(dfn).st_size
-    print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
-else:
-    print(f"Found {dfn} locally!")
-    f_size = os.stat(dfn).st_size
-    print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+#     print("\tDone downloading.")
+#     f_size = os.stat(dfn).st_size
+#     print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+# else:
+#     print(f"Found {dfn} locally!")
+#     f_size = os.stat(dfn).st_size
+#     print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
+
+# dfn
 ```
 
 ```{python}
@@ -134,15 +136,13 @@ def cache_data(src:str) -> str:
             # Download and save the file #os.path.join(*path)
             try:
                 with open(dfn, "wb") as file:
-                    response = get(src)
+                    response = requests.get(src)
                     response.raise_for_status()  # Raise an exception for HTTP errors
                     file.write(response.content)
                 print("\tDone downloading.")
             except Exception as e:
-                print(f"Error while downloading {src}: {e}")
-                return ""
-     
-        print("\tDone downloading.")
+                print(f"Error: {e}")
+                
         f_size = os.stat(dfn).st_size
         print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
     else:
@@ -169,16 +169,22 @@ for date in airbnbdates:
     airbnburl  = f"https://data.insideairbnb.com/united-kingdom/england/london/{date}/data/listings.csv.gz"
     dfn = cache_data(airbnburl)
     airbnbdfs.append(pd.read_csv(dfn, low_memory=False,usecols=airbnbcols))
-    #.split('/')[-1]
-    print(f"Data frame from date {date} is {df.shape[0]:,} x {df.shape[1]}")
+    print(f"Data frame from date {date} is {airbnbdfs[0].shape[0]:,} x {airbnbdfs[0].shape[1]}")
 
-airbnb_old, airbnb2024_new = airbnbdfs
+airbnb_old, airbnb_new = airbnbdfs #airbnb_old is the earlier scrape, and new is the later scrape. We don't hardcode the dates for reproducibility with other dates and times.
 ```
 
 ```{python}
-dfn
+airbnb_old.head(2)
 ```
 
+```{python}
+airbnb_new.head(2)
+```
+
+```{python}
+# airbnb_old == airbnb_new
+```
 
 ## 1. Who collected the InsideAirbnb data?
 
