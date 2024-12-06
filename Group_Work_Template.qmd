@@ -64,6 +64,9 @@ from PIL import Image
 from io import BytesIO
 from shapely.geometry import Point
 from urllib.parse import urlparse
+import base64  # Add this import at the top
+import IPython.display as display
+import random
 
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
@@ -149,7 +152,7 @@ for df in airbnb_dflist:
 ```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
-# Data cleaning. We first define the functions to be used in cleaning.
+# InsideAirbnb data cleaning. We first define the functions to be used in cleaning.
 #_____________________________________________________________________________________________________________________________
 def pick_active_listings(df, date='str', col="str"):
     """
@@ -353,9 +356,6 @@ airbnb_gdf_clean[0].head(1) #this prints 1st element of the list, so the older d
 # This was not developed as a proper validation tool, only as a proof of concept of finding duplicates.
 # As this is not the main part of the exercise, ChatGPT was heavily used here to set up thumbnail plotting.
 
-import base64  # Add this import at the top
-import IPython.display as display
-import random
 def check_genuine(df, **kwargs):
     """
     Receives df and random_state as args. If unspecified, gives random number as random_state.
@@ -435,6 +435,97 @@ def check_genuine(df, **kwargs):
 ```{python}
 #| echo: false
 check_genuine(airbnb_gdf_ingenuine[1]) #you can also define random state, e.g. check_genuine(df_valid_nodups,random_state=10)
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Loading private rents data
+#_____________________________________________________________________________________________________________________________
+df_rentalprice = pd.read_csv(os.path.join('data','raw','onsrents.csv'))
+#_____________________________________________________________________________________________________________________________
+# Filtering data
+#_____________________________________________________________________________________________________________________________
+# Filtering for London boroughs based on Area Code 'E09'
+df_london = df_rentalprice[df_rentalprice['Area code'].str.startswith('E09')]
+
+# Resetting the index of the filtered DataFrame
+df_london = df_london.reset_index(drop=True)
+
+# Ensure 'Time period' is in datetime format
+df_london['Time period'] = pd.to_datetime(df_london['Time period'], errors='coerce')
+
+# Define the start and end dates of the 2023-24 financial year
+# Filter the DataFrame to include only rows within this period
+start_date = pd.to_datetime("2023-04-01")
+end_date = pd.to_datetime("2024-03-31")
+filtered_rents = df_london[(df_london['Time period'] >= start_date) & (df_london['Time period'] <= end_date)]
+
+# Grouping by Area code and Time period, calculating the average index (assumed to be rental price)
+monthly_avg_rent = filtered_rents.groupby(['Area code', 'Area name', 'Time period'])['Rental price'].mean().reset_index()
+
+# Renaming the columns for clarity
+monthly_avg_rent.columns = ['Area code', 'Borough Name', 'Time period', 'Average Rental Price']
+
+# Display the result
+print(monthly_avg_rent)
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Loading other data
+#_____________________________________________________________________________________________________________________________
+raw_csvs_fn = [
+    'Census_LSOA_Dwellings', 'Census_dwellings', 'Census_Households', 'Census_Tenure', 'Census_Accommodation', 'Census_BedroomOcc', 'Census_CarsVans', 'Census_Deprivation', 'Census_NsSeC', 'Census_PopDensity', 'Census_Addresses', 'Sales-2024-09', 
+    'First-Time-Buyer-Former-Owner-Occupied-2024-09', 'New-and-Old-2024-09', 'onsrents']
+skiprows = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, None]
+nrows = [4994, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 138543, 60219, 138543, None]
+parse_dates = [None, None, None, None, None, None, None, None, None, None, None, None, ['Date'], ['Date'], ['Date']]
+usecols = [
+    None, ['local authority: county / unitary (as of April 2023)', 'mnemonic', 'Total'], ['mnemonic', '2021'],  ['mnemonic', 'Owned', 'Shared ownership', 'Social rented', 'Private rented or lives rent free'], 
+    ['mnemonic', 'Detached', 'Semi-detached', 'Terraced', 'In a purpose-built block of flats or tenement','Part of a converted or shared house, including bedsits', 'Part of another converted building, for example, former school, church or warehouse', 
+    'In a commercial building, for example, in an office building, hotel or over a shop'], ['mnemonic', 'Occupancy rating of bedrooms: +2 or more', 'Occupancy rating of bedrooms: +1', 
+    'Occupancy rating of bedrooms: 0', 'Occupancy rating of bedrooms: -1', 'Occupancy rating of bedrooms: -2 or less'], ['mnemonic', 'No cars or vans in household', '1 car or van in household', 
+    '2 cars or vans in household', '3 or more cars or vans in household'], ['mnemonic', 'Household is not deprived in any dimension', 'Household is deprived in one dimension', 'Household is deprived in two dimensions', 
+    'Household is deprived in three dimensions', 'Household is deprived in four dimensions'], ['mnemonic', 'L1, L2 and L3 Higher managerial, administrative and professional occupations', 'L4, L5 and L6 Lower managerial, administrative and professional occupations', 
+    'L7 Intermediate occupations', 'L8 and L9 Small employers and own account workers', 'L10 and L11 Lower supervisory and technical occupations', 'L12 Semi-routine occupations', 
+    'L13 Routine occupations', 'L14.1 and L14.2 Never worked and long-term unemployed', 'L15 Full-time students'], ['mnemonic', '2021'], ['mnemonic', 'Address one year ago is the same as the address of enumeration', 
+    'Address one year ago is student term-time or boarding school address in the UK', 'Migrant from within the UK: Address one year ago was in the UK', 'Migrant from outside the UK: Address one year ago was outside the UK'], 
+    ['Date', 'Area_Code', 'First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'], ['Date', 'Area_Code', 'New_Build_Average_Price', 'Existing_Property_Average_Price'], None
+]
+csv_dict = {
+    "raw_csvs_fn": raw_csvs_fn,
+    "skiprows": skiprows,
+    "nrows": nrows,
+    "parse_dates": parse_dates,
+    "usecols": usecols,
+}
+raw_csvs = []
+for idx, item in enumerate(csv_dict["raw_csvs_fn"]):
+
+    read_csv_kwargs = {
+        "skiprows": csv_dict["skiprows"][idx],
+        "nrows": csv_dict["nrows"][idx],
+        "usecols": csv_dict["usecols"][idx],
+        "parse_dates": csv_dict["parse_dates"][idx]
+    }
+    read_csv_kwargs = {k: v for k, v in read_csv_kwargs.items() if v is not None}
+    
+    df = pd.read_csv(os.path.join('data', 'raw', f"{item}.csv"), **read_csv_kwargs)
+    raw_csvs.append(df)  #append the df to the list
+```
+
+```{python}
+
+raw_csvs[-3]
+```
+
+```{python}
+df_hp_firsttime = pd.read_csv("https://github.com/a-saveleva/FSDS_Slap/blob/main/house_prices/First-Time-Buyer-Former-Owner-Occupied-2024-09.csv?raw=true", 
+                                  skiprows = 0, nrows = 60219, parse_dates = ['Date'],
+                             usecols = ['Date', 'Area_Code', 'First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'])
+df_hp_firsttime
 ```
 
 ## 1. Who collected the InsideAirbnb data?
