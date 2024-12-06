@@ -70,49 +70,6 @@ pd.options.display.max_colwidth = 200
 ```
 
 ```{python}
-# dest = os.path.join('data','raw') #destination to save data
-# src  = f"https://data.insideairbnb.com/united-kingdom/england/london/2024-09-06/data/listings.csv.gz"
-# url = urlparse(src) # We assume that this is some kind of valid URL 
-# fn = (url.path.split('/')[-3])+(url.path.split('/')[-1]) # return the file name with date
-# os.path.split(url.path)[-1]
-# dfn = os.path.join(dest,fn) # Destination filename
-# print(f"Writing to: {fn}")
-```
-
-```{python}
-# dfn
-```
-
-```{python}
-# if not os.path.isfile(dfn) or os.stat(dfn).st_size < 250:
-    
-#     print(f"{dfn} not found or corrupted, downloading!")
-#     path = os.path.split(dest)
-#     if len(path) >= 1 and path[0] != '':
-#         os.makedirs(os.path.join(*path), exist_ok=True)
-#         # Download and save the file
-#         try:
-#             with open(dfn, "wb") as file:
-#                 response = get(src)
-#                 response.raise_for_status()  # Raise an exception for HTTP errors
-#                 file.write(response.content)
-#             print("\tDone downloading.")
-#         except Exception as e:
-#             print(f" {src}: {e}")
-#             return ""
- 
-#     print("\tDone downloading.")
-#     f_size = os.stat(dfn).st_size
-#     print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
-# else:
-#     print(f"Found {dfn} locally!")
-#     f_size = os.stat(dfn).st_size
-#     print(f"\tSize is {f_size/1024**2:,.0f} MB ({f_size:,} bytes)")
-
-# dfn
-```
-
-```{python}
 #| echo: false
 def cache_data(src:str) -> str:
     """Downloads and caches a remote file locally.
@@ -155,8 +112,11 @@ def cache_data(src:str) -> str:
 
 ```{python}
 #| echo: false
+#_____________________________________________________________________________________________________________________________
 # Set download URL for London data the date should be choosen by reviewing 
-# the Inside Airbnb Get Data page and identifying the date of the required data
+# the InsideAirbnb Get Data page and identifying the date of the required data
+# We are using the 2 datasets with earliest and latest scrape of those available
+#_____________________________________________________________________________________________________________________________
 airbnbdates  = ["2023-12-10", "2024-09-06"]
 airbnbcols = ['id', 'listing_url', 'picture_url', 'host_id', 'host_listings_count',
               'host_total_listings_count', 'property_type', 'room_type', 'price', 
@@ -164,26 +124,317 @@ airbnbcols = ['id', 'listing_url', 'picture_url', 'host_id', 'host_listings_coun
               'number_of_reviews', 'latitude', 'longitude', 'last_review', 
               'beds', 'bedrooms']
 airbnbdfs = []
-
 for date in airbnbdates:
     airbnburl  = f"https://data.insideairbnb.com/united-kingdom/england/london/{date}/data/listings.csv.gz"
     dfn = cache_data(airbnburl)
     airbnbdfs.append(pd.read_csv(dfn, low_memory=False,usecols=airbnbcols))
-    print(f"Data frame from date {date} is {airbnbdfs[0].shape[0]:,} x {airbnbdfs[0].shape[1]}")
+   
+airbnb_dflist = [airbnb_old, airbnb_new] = airbnbdfs #airbnb_old is the earlier scrape, and new is the later scrape. We don't hardcode the dates for reproducibility with other dates and times.
 
-airbnb_old, airbnb_new = airbnbdfs #airbnb_old is the earlier scrape, and new is the later scrape. We don't hardcode the dates for reproducibility with other dates and times.
+airbnb_gdfs = []
+for df in airbnb_dflist:
+#_____________________________________________________________________________________________________________________________
+#   I convert the df into gdf, reproject into EPSG 27700
+#_____________________________________________________________________________________________________________________________  
+    df = gpd.GeoDataFrame(
+        df,
+        geometry=gpd.points_from_xy(df.longitude, df.latitude),
+        crs='EPSG:4326')
+    
+    df = df.set_crs('EPSG:4326', allow_override=True)
+    df.to_crs('EPSG:27700', inplace=True)
+    airbnb_gdfs.append(df)
 ```
 
 ```{python}
-airbnb_old.head(2)
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Data cleaning. We first define the functions to be used in cleaning.
+#_____________________________________________________________________________________________________________________________
+def pick_active_listings(df, date='str', col="str"):
+    """
+    Converting review column to datetime, and selecting only the recently active listings. 
+    Recently active is defined as those which received at least one review for the year precedeng the scrape.
+    Arguments:
+    date: string, format "%Y-%m-%d"
+    dataframe
+    col: string, colname with "last_review" or its alternative
+    """
+    df.loc[:, col] = pd.to_datetime(df[col])
+    date = datetime.strptime(date, "%Y-%m-%d")
+    df = df[df['last_review'] > (date - relativedelta(years=1))] #| (df['last_review'].isnull())]
+    
+    print(f"Data frame after filtering last review date is {df.shape[0]:,} x {df.shape[1]} long.")
+    return df
 ```
 
 ```{python}
-airbnb_new.head(2)
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Why do we remove duplicates?
+# In the regression part of our analysis, we  want to calculate N of homes that are somehow involved in Airbnb listings, and therefore don't fulle realise it's potential on traditional rental/housing market.
+# If we took just listing locations, with the amount of duplicates that we found, the N would show ACTIVITY of hosts more than loss of homes for housing market.
+# ChatGPT was used here to determine clustering methods, and for debugging.
+#_____________________________________________________________________________________________________________________________
+
+def find_duplicates(df_valid):
+    """
+    The function looks at hosts with multiple listings and checks if they are within 300m radius (150m max location scattering as per Airbnb's anonymisation algorithm, x2).
+    It then estimates the number of genuine homes within the cluster.
+    
+    Returns a gdf with new columns: 
+    'cluster_id' - each unique value is a cluster
+    'easting', 'northing' - used in calculating the proximity of listings
+    'prvt_rms_in_cluster','entr_hms_in_cluster' - summarises N of private rooms and entire homes within the cluster
+    'genuine', 'true_nrooms' - boolean column, and int column, with the following assumptions:
+
+    If the cluster has 0 entire homes, and N rooms, first room will be "converted" to an entire home, and the rest will be discarded. 
+    The location of the point will be amended to represent centrepoint of all rooms in the cluster.
+    Record of the N of rooms will stay in col "true_nrooms"
+    If the cluster has rooms and entire homes, the homes will be treated as genuine homes, and rooms treated as duplicates of the genuine home. 
+    With the current timeframes, further enquiries into uniqueness of homes vs rooms inside each cluster is not feasible.
+    """
+    
+    df['easting'], df['northing'] = df.geometry.x, df.geometry.y #this is needed for the clustering  
+#_____________________________________________________________________________________________________________________________
+#   We are looking for duplicates among multi-listing hosts. First, we filter by new_listings_count > 1.
+#_____________________________________________________________________________________________________________________________
+    finddups = df_valid[df_valid['new_host_listings_count'] > 1]
+    print(f"There are {finddups.shape[0]:,} listings from multi-listing hosts.")
+#_____________________________________________________________________________________________________________________________
+#   I perform cluster analysis a1nd mark listings from the same host that are within 300m from each other 
+#   (150m max location scattering as per Airbnb's anonymisation algorithm, x2). They constitute a cluster, and we then assess if they are a duplicate or not.
+#   The selected method computes pairwise distances  can calculate the distance matrix between all points in a group. 
+#   Before this method I tried KNN, but the listings were paired incorrectly. 
+#   cdist solved this, and it is relatively light on small groups (our dataset is large, but it is split into small groups - by host).
+#
+#   It is possible, that listings outside clusters also could be in one entire home. E.g. there could be several hosts registered for one home.
+#   We acknowledge this gap, and advise this for further research.
+#_____________________________________________________________________________________________________________________________
+    # Process each host group
+    for host_id, group in finddups.groupby("host_id"):
+        if len(group) > 1:  # Only proceed if there is more than 1 listing
+            coords = group[['easting', 'northing']].to_numpy()
+            
+            # Calculate pairwise distances using pdist (returns condensed distance matrix)
+            dist_matrix = pdist(coords)
+            
+            # Perform hierarchical clustering using the condensed distance matrix
+            linkage_matrix = linkage(dist_matrix, method='single')
+            clusters = fcluster(linkage_matrix, t=300, criterion='distance')
+            
+            # Create a series to count cluster sizes
+            cluster_sizes = pd.Series(clusters).value_counts()
+    
+            # Assign clusters to rows in the group, but only for clusters with more than one member - these will retain default column value of None
+            finddups.loc[group.index, 'cluster_id'] = [
+                f"{host_id}-{cluster}" if cluster_sizes[cluster] > 1 else None
+                for cluster in clusters
+            ]
+#_____________________________________________________________________________________________________________________________
+#   We create a subset with non-unique listings only to calculate true_nrooms and determine genuineness.
+#   At the very end of the function, this subset is merged back into df_valid.
+#_____________________________________________________________________________________________________________________________
+    finddups1 = finddups[~finddups['cluster_id'].isna()]
+    finddups1 = finddups1.loc[finddups.duplicated(subset='cluster_id', keep=False)]   
+    print(f"Found {len(set(finddups1.cluster_id)):,} clusters.")   
+#_____________________________________________________________________________________________________________________________
+#   I calculate N of entire homes and rooms in each cluster.
+#   Limitation found during EDA: "bedrooms" column in InsideAirbnb differs between scrapes. 
+#   "2023-12-10" scrape has NaN values in this column, while "2024-09-06" scrape has full data.
+#   For both datasets, we use "beds" column as a substitute, because airbnb2024.bedrooms.median()/airbnb2024.beds.median() = 1.
+#_____________________________________________________________________________________________________________________________
+    finddups1 = finddups.loc[finddups.duplicated(subset='cluster_id',keep=False)]
+#   Loop through each cluster by cluster_id. 
+    for i, group in finddups1.groupby("cluster_id"):
+        # Count number of entire homes and private rooms in the group
+        n_entire_homes = group[group['room_type'] == 'Entire home/apt'].shape[0]
+        n_private_rooms = group[group['room_type'] == 'Private room'].shape[0]   
+        # Assign these counts back to the original DataFrame
+        finddups1.loc[group.index, 'entr_hms_in_cluster'] = n_entire_homes
+        finddups1.loc[group.index, 'prvt_rms_in_cluster'] = n_private_rooms          
+#_____________________________________________________________________________________________________________________________
+#   I then determine whether listings are genuine unique homes, or rooms from one entire home.
+#   If the cluster has 0 entire homes, and N rooms, first room will be "converted" to an entire home, and the rest will be discarded.
+#   Record of the N of rooms will stay in col "true_nrooms".
+#   If the cluster has rooms and entire homes, the homes will be treated as genuine homes, and rooms treated as duplicates of the genuine home.
+#   It is possible that all entire homes in one cluster are absolutely identical, but with the methods employed we can go this far. We acknowledge the gap and suggest it for further research.
+#_____________________________________________________________________________________________________________________________
+    for cluster_id, group in finddups1.groupby("cluster_id"):
+        
+        num_entire_homes = (group['room_type'] == 'Entire home/apt').sum()
+        if num_entire_homes == 0:
+            # If only rooms are in the cluster
+            finddups1.loc[group.index, 'genuine'] = False  # Mark all as duplicates
+            finddups1.loc[group.index[0], 'genuine'] = True  # First room becomes the genuine home
+#_____________________________________________________________________________________________________________________________
+#           but the geometry is replaced with centroid x and y.  
+#           Without this the point and all associated rooms can be aggregated by different spatial unit, considering the scale of the location approximation (up to 150m from origin).
+#           This is not crucial for our research, because we aggregate by borough, and potential aggregation errors will be minimal. But for other research with smaller geospatial units it will prove more useful.
+#_____________________________________________________________________________________________________________________________
+            dissolved_geometry = group.geometry.union_all()  # Combine all geometries in the group
+            centroid = dissolved_geometry.centroid # Get the centroid of the combined geometry
+            finddups1.at[group.index[0], 'geometry'] = Point(centroid.x, centroid.y)
+        else:
+            # Cluster has both rooms and entire homes
+            finddups1.loc[group.index, 'genuine'] = False  # Default all to duplicates
+            entire_home_indices = group[group['room_type'] == 'Entire home/apt'].index
+            finddups1.loc[entire_home_indices, 'genuine'] = True  # Mark entire homes with true
+
+    print(f"The clustering exercise identified {len(finddups1[finddups1['genuine'] == False])} listings that are potentially duplicates of other listings.")
+    df_valid.update(finddups1)
+    
+    return df_valid
 ```
 
 ```{python}
-# airbnb_old == airbnb_new
+#| echo: false
+airbnb_gdf_clean = []
+airbnb_gdf_ingenuine = []
+
+for df in airbnb_gdfs:
+    print(f"Initial dataframe is {df.shape[0]:,} x {df.shape[1]} long.")
+    df['price'] = df['price'].fillna('0').str.replace('$', '', regex=False).str.replace(',', '').astype(float).astype(int)
+    df.drop(df[df["price"]==0].index, axis=0, inplace=True)
+    print(f"Data frame after filtering invalid prices is {df.shape[0]:,} x {df.shape[1]} long.")
+    
+    df = pick_active_listings(df, date, "last_review")
+
+    ints  = ['id', 'host_listings_count', 'host_id', 'bedrooms', 'beds', 
+             'host_total_listings_count', 'minimum_nights', 'maximum_nights', 'availability_365', 'number_of_reviews']
+    for i in ints:
+        #print(f"Converting {i}")
+        try:
+            df.loc[:, i] = df[i].fillna(0).astype(float).astype(int)
+        except ValueError as e:
+            #print("  - !!!Converting to unsigned 16-bit integer!!!")
+            df.loc[:, i] = df[i].fillna(0).astype(float).astype(pd.UInt16Dtype())
+    #_____________________________________________________________________________________________________________________________
+    # After these transformations, the N of listings for each host has changed. We dropped rows where listings were likely inactive at the time of the scrape.
+    # We create a new column with host_listings_count, and calculate the counts using grouping by host_id.
+    #_____________________________________________________________________________________________________________________________
+    host_counts = df['host_id'].value_counts()
+    df = pd.merge(df,host_counts,right_index=True,left_on='host_id').rename(columns={'count':'new_host_listings_count'})
+        
+    # null values in N of bedrooms will interfere with our analysis, therefore we drop them
+    df = df[df['beds'].notna()]
+    print(f"Data frame after cleaning invalid N of beds is {df.shape[0]:,} listings long.")
+    
+    # creating columns necessary for the analysis and filling with default values
+    df['prvt_rms_in_cluster'] = df['beds'] #be are using beds for rooms, but for now just copy the column
+    df['entr_hms_in_cluster'] = 0 #default will be 0
+    df['cluster_id'] = None #will write ids here
+    #df['true_nrooms'] = df['beds'] #estimation of true n of rooms proved inconclusive with the methods used. The parts related to rooms are commented out.
+    df['genuine'] = True   
+    
+    dups = find_duplicates(df) 
+    airbnb_gdf_ingenuine.append((dups[dups['genuine'] == False]).copy()) #collecting False for validation
+    
+    df = (df[df['genuine'] == True]).copy()
+    print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long.\n")
+    
+    airbnb_gdf_clean.append(df)
+```
+
+```{python}
+#| echo: false
+airbnb_gdf_clean[0].head(1) #this prints 1st element of the list, so the older dataset
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+#   You might wonder, whether the find_duplicates function works properly.
+#   We acknowledge that, given the timeframes, and considering that our research question is not specifically about duplicates,
+#   it is not feasible to develop a complex validation mechanism.
+#   However, you can see for yourself the results of the clustering and our assumptions, using the function below.
+#_____________________________________________________________________________________________________________________________
+
+# This was not developed as a proper validation tool, only as a proof of concept of finding duplicates.
+# As this is not the main part of the exercise, ChatGPT was heavily used here to set up thumbnail plotting.
+
+import base64  # Add this import at the top
+import IPython.display as display
+import random
+def check_genuine(df, **kwargs):
+    """
+    Receives df and random_state as args. If unspecified, gives random number as random_state.
+    Displays the random ingenuine listing, and other listings from its cluster as clickable image thumbnails.
+    """
+    if not kwargs.get('random_state'):
+        random_state = random.randint(0,1000)
+    else:
+        random_state = kwargs.get('random_state')
+    print(f'Random_state unspecified, selecting:{random_state}.')
+    
+    # Select a random "ingenuine" listing from the dataset
+    listing_check = df[df['genuine'] == False].sample(1, random_state=random_state)
+    
+    print(f"Let's have a look at the random listing. ID: {listing_check.id.values[0]}")
+    print(f"Cluster number {listing_check.cluster_id.values[0]}")
+    
+    if (listing_check['beds'] > 4).any():
+        print("Our estimate is that this might be a hostel, party home or similar hishly commercialised listing.")
+    else:
+        print("Our estimate is that this cluster might be one entire home, and is a significant loss to housing and rental market.")
+    
+    print("All listings in this cluster are below. Click on the image to open the listings on website.")
+    print("You might get inactive links with past datasets.")
+    
+    # Get all listings in the same cluster
+    same_cluster = df[df["cluster_id"] == listing_check.cluster_id.values[0]]
+    # print(same_cluster[["id", "listing_url"]])
+    
+    # Collect successful images and their associated URLs
+    successful_images = []
+    urls = []
+    
+    for idx, row in same_cluster.iterrows():
+        try:
+            response = requests.get(row['picture_url'], timeout=10)
+            response.raise_for_status()  # Raise an error for HTTP issues
+            img = Image.open(BytesIO(response.content))
+            img.thumbnail((190, 190))  # Resize image for thumbnail display
+            successful_images.append((img, row['listing_url']))
+        except Exception as e:
+            print(f"Failed to retrieve image for Listing ID: {row['id']}. Error: {e}")
+    
+    # If no successful images, return early
+    if not successful_images:
+        print("No images could be retrieved.")
+        return
+    
+    # Render images and clickable links in Quarto Markdown
+    html_content = "<table>"
+    for i, (img, url) in enumerate(successful_images):
+        if i % 3 == 0:  # Start a new row every 3 images
+            html_content += "<tr>"
+        
+        # Convert the image to a data URL
+        img_buffer = BytesIO()
+        img.save(img_buffer, format="PNG")
+        img_data = img_buffer.getvalue()
+        img_base64 = base64.b64encode(img_data).decode('utf-8')  # Encoding the image
+        img_src = f"data:image/png;base64,{img_base64}"
+        
+        # Add the image and link to the HTML
+        html_content += f"""
+        <td style="text-align:center; padding:5px">
+            <a href="{url}" target="_blank"><img src="{img_src}" style="width:128px; height:auto; border:1px solid #ccc" /></a>
+        </td>
+        """
+        if i % 3 == 2:  # End the row every 3 images
+            html_content += "</tr>"
+    
+    html_content += "</table>"
+    
+    # Display the HTML in Quarto
+    display.display(display.HTML(html_content))
+```
+
+```{python}
+#| echo: false
+check_genuine(airbnb_gdf_ingenuine[1]) #you can also define random state, e.g. check_genuine(df_valid_nodups,random_state=10)
 ```
 
 ## 1. Who collected the InsideAirbnb data?
