@@ -338,6 +338,8 @@ for df in airbnb_gdfs:
     airbnb_gdf_ingenuine.append((dups[dups['genuine'] == False]).copy()) #collecting False for validation
     
     df = (df[df['genuine'] == True]).copy()
+    df = df[(df['availability_365']) > (5.84*12)] #Filtering by "commercial" - rented out more than average per month for London. Average is 5.84 days
+
     print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long.\n")
     
     airbnb_gdf_clean.append(df)
@@ -744,10 +746,19 @@ def airbnb_count(gdf, boro_gdf):
 
 ```{python}
 #| echo: false
+#_____________________________________________________________________________________________________________________________
+# Making the counts of airbnbs
+#_____________________________________________________________________________________________________________________________
+
 airbnb_2024_boro = airbnb_count(airbnb_gdf_clean[1], boro_gdf) #list of [boro_count_gdf, entire_ab_gdf, pr_ab_gdf]
 airbnb_2023_boro = airbnb_count(airbnb_gdf_clean[0], boro_gdf)
 airbnb_2024_lsoa = airbnb_count(airbnb_gdf_clean[1], lsoa_gdf)
 airbnb_2023_lsoa = airbnb_count(airbnb_gdf_clean[0], lsoa_gdf)
+```
+
+```{python}
+# #| echo: false
+len(airbnb_2024_boro[1]), len(airbnb_2023_boro[1]), len(airbnb_2024_lsoa[1]), len(airbnb_2023_lsoa[1])
 ```
 
 ```{python}
@@ -840,10 +851,10 @@ def rel_prcnt_change_gdfs(gdf_old, gdf_new, cols):
 ```
 
 ```{python}
-#| echo: false
-cols_diff_airbnb = ['total_airbnbs', 'total_entireha', 'total_privateroom']
-diff2024_2023_boro = substract_gdfs(airbnb_2023_boro[0], airbnb_2024_boro[0], cols_diff_airbnb)
-diff2024_2023_lsoa = substract_gdfs(airbnb_2023_lsoa[0], airbnb_2024_lsoa[0], cols_diff_airbnb)
+# #| echo: false
+# cols_diff_airbnb = ['total_airbnbs', 'total_entireha', 'total_privateroom']
+# diff2024_2023_boro = substract_gdfs(airbnb_2023_boro[0], airbnb_2024_boro[0], cols_diff_airbnb)
+# diff2024_2023_lsoa = substract_gdfs(airbnb_2023_lsoa[0], airbnb_2024_lsoa[0], cols_diff_airbnb)
 ```
 
 ```{python}
@@ -1003,6 +1014,59 @@ diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
 axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
 axes[1].set_xlabel("Longitude")
 axes[1].set_ylabel("Latitude")
+
+# Adjust layout for better spacing
+plt.tight_layout()
+plt.show()
+```
+
+```{python}
+#| echo: false
+# Determine the min and max values across both columns
+vmin = min(diff2024_2023_boro['total_entireha'].min(), diff2024_2023_boro['total_privateroom'].min())
+vmax = max(diff2024_2023_boro['total_entireha'].max(), diff2024_2023_boro['total_privateroom'].max())
+
+# Create a TwoSlopeNorm instance
+norm = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
+
+# Create the subplots
+fig, axes = plt.subplots(1, 2, figsize=(15, 8))
+
+# Plot 'total_entireha' with shared color scale and custom normalization
+diff2024_2023_boro.plot(column='total_airbnbs', ax=axes[0], legend=True,
+                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
+                                     'orientation': "horizontal"},
+                        cmap='coolwarm', edgecolor='black',
+                        norm=norm)  # Apply custom normalization
+
+# Add title and labels
+axes[0].set_title("Relative Percentage Difference in count of the AirBnb locations available (total count) by Borough, 2024-2023", fontsize=8)
+axes[0].set_xlabel("Longitude")
+axes[0].set_ylabel("Latitude")
+
+# Plot 'total_privateroom' with shared color scale and custom normalization
+diff2024_2023_boro.plot(column='total_entireha', ax=axes[1], legend=True,
+                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
+                                     'orientation': "horizontal"},
+                        cmap='coolwarm', edgecolor='black',
+                        norm=norm)  # Apply custom normalization
+
+# Add title and labels
+axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"entire home\" rentals by Borough, 2024-2023", fontsize=8)
+axes[1].set_xlabel("Longitude")
+axes[1].set_ylabel("Latitude")
+
+# # Plot 'total_privateroom' with shared color scale and custom normalization
+# diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
+#                         legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
+#                                      'orientation': "horizontal"},
+#                         cmap='coolwarm', edgecolor='black',
+#                         norm=norm)  # Apply custom normalization
+
+# # Add title and labels
+# axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
+# axes[1].set_xlabel("Longitude")
+# axes[1].set_ylabel("Latitude")
 
 # Adjust layout for better spacing
 plt.tight_layout()
