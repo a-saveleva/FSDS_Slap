@@ -680,7 +680,7 @@ for df in demographics_merge[1:]:
 ```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
-# Creating core datasets to be used in analysis: Rents data
+# Perform some spatial data wrangling on the airbnb data then load spatial data (boroughs, lsoa) and join the airbnb data to the spatial data.
 #_____________________________________________________________________________________________________________________________
 rents_merge = [df_PRS1bed, df_PRS2bed, df_PRS3bed, df_PRS4bed]
 df_PrivateRentsRooms = rents_merge[0]
@@ -690,7 +690,10 @@ for df in rents_merge[1:]:
 ```
 
 ```{python}
-print("hello world")
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Performing spatial joins of Airbnb data by borough
+#_____________________________________________________________________________________________________________________________
 ```
 
 ## 1. Who collected the InsideAirbnb data?
