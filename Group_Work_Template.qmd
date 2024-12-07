@@ -377,7 +377,7 @@ def check_genuine(df, **kwargs):
     if (listing_check['beds'] > 4).any():
         print("Our estimate is that this might be a hostel, party home or similar hishly commercialised listing.")
     else:
-        print("Our estimate is that this cluster might be one entire home, and is a significant loss to housing and rental market.")
+        print("Our estimate is that this cluster might be one entire home, and is a significant loss to housing and rental market.\n")
     
     print("All listings in this cluster are below. Click on the image to open the listings on website.")
     print("You might get inactive links with past datasets.")
@@ -436,6 +436,14 @@ def check_genuine(df, **kwargs):
 ```{python}
 #| echo: false
 check_genuine(airbnb_gdf_ingenuine[1]) #you can also define random state, e.g. check_genuine(df_valid_nodups,random_state=10)
+```
+
+```{python}
+airbnb_gdf_ingenuine[1][airbnb_gdf_ingenuine[1]['id'] == 36115360]
+```
+
+```{python}
+airbnb_gdf_ingenuine[1]
 ```
 
 ```{python}
@@ -548,14 +556,6 @@ for idx, df in enumerate(data_df[1:], start=1):
 ```
 
 ```{python}
-len(data_df[-1])
-```
-
-```{python}
-data_df[-5].head()
-```
-
-```{python}
 #| echo: false
 (df_censusLSOAdwell, df_censusdwellings, df_censusHHolds, df_censusTenure, df_censusaccomm, 
 df_censusbedocc, df_censuscarsvans, df_censusdepriv, df_censusnssec, df_censuspopdens, df_censusaddress, df_hp_sales, df_hp_firsttime, 
@@ -575,10 +575,6 @@ for idx, i in enumerate(for_entropy):
     array = np.array(i.iloc[:, 1:])  # Select all rows and columns starting from the second column
     entropy_values = np.apply_along_axis(entropy, axis=1, arr=array)  # Apply entropy along each row (axis=1)
     i[f"{for_entropy_strings[idx]}"] = entropy_values
-```
-
-```{python}
-df_censusdwellings.head()
 ```
 
 ```{python}
@@ -603,26 +599,6 @@ df_PRS2bed = df_PRS2bed.rename(columns={'Mean': 'MeanTwoBedRent2023', 'Median': 
 df_PRS3bed = df_PRS3bed.rename(columns={'Mean': 'MeanThreeBedRent2023', 'Median': 'MedianThreeBedRent2023'})
 df_PRS4bed = df_PRS4bed.rename(columns={'Mean': 'MeanFourPlusBedRent2023', 'Median': 'MedianFourPlusBedRent2023'})
 df_rentalprice = df_rentalprice.rename(columns={'Time period': 'Date'})
-```
-
-```{python}
-df_rentalprice.head()
-```
-
-```{python}
-df_censusaccomm.head()
-```
-
-```{python}
-df_homless_A2P.head()
-```
-
-```{python}
-df_homless_A2P.head()
-```
-
-```{python}
-len(df_homless_A2P)
 ```
 
 ```{python}
@@ -652,10 +628,6 @@ df_hp_newbuild_totals = df_hp_newbuild.groupby(['mnemonic']).mean(['New_Build_Av
 ```
 
 ```{python}
-df_homless_A2P.info()
-```
-
-```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
 # Transfrom columns
@@ -670,7 +642,51 @@ df_PRS4bed['MedianFourPlusBedRent2023'] = pd.to_numeric(df_PRS4bed['MedianFourPl
 ```
 
 ```{python}
-df_homless_A2P.info()
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Creating core datasets to be used in analysis: Housing data
+#_____________________________________________________________________________________________________________________________
+housing_merge = [df_censusdwellings, df_censusHHolds, df_vacantprops, df_hp_median,
+                  df_hp_lower, df_hp_totals, df_homless_A2P, df_hp_firsttime_totals,
+                  df_hp_newbuild_totals, df_censusTenure, monthly_avg_rent]
+
+df_CoreHousing = housing_merge[0]
+for df in housing_merge[1:]:
+    df_CoreHousing = pd.merge(df_CoreHousing, df, on='mnemonic', how='outer')
+
+df_CoreHousing['PrevDutyPercent'] = ((df_CoreHousing['HHoldsPrevDuty']) / (df_CoreHousing['Total_Hholds']))*100
+df_CoreHousing['EndASTPercent'] = ((df_CoreHousing['HHoldEndAST']) / (df_CoreHousing['Total_Hholds']))*100
+df_CoreHousing['SellReletPercent'] = ((df_CoreHousing['HHoldSellRelet']) / (df_CoreHousing['Total_Hholds']))*100
+df_CoreHousing['VacantPercent'] = ((df_CoreHousing['2023_LTVacant']) / (df_CoreHousing['Total_Dwellings']))*100
+df_CoreHousing['SalesPercent'] = ((df_CoreHousing['Sales_Volume']) / (df_CoreHousing['Total_Dwellings']))*100
+#df_CoreHousing
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Creating core datasets to be used in analysis: Demographics data
+#_____________________________________________________________________________________________________________________________
+demographics_merge = [df_censusdwellings, df_censusHHolds, df_censusTenure, df_censuspopdens,
+                  df_censusaddress, df_censuscarsvans, df_censusdepriv, df_censusnssec,
+                  df_censusbedocc, df_censusaccomm]
+
+df_CoreDemographics = demographics_merge[0]
+for df in demographics_merge[1:]:
+    df_CoreDemographics = pd.merge(df_CoreHousing, df, on='mnemonic', how='outer')
+#df_CoreDemographics
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Creating core datasets to be used in analysis: Rents data
+#_____________________________________________________________________________________________________________________________
+rents_merge = [df_PRS1bed, df_PRS2bed, df_PRS3bed, df_PRS4bed]
+df_PrivateRentsRooms = rents_merge[0]
+for df in rents_merge[1:]:
+    df_PrivateRentsRooms = pd.merge(df_PrivateRentsRooms, df, on='mnemonic', how='outer')
+#df_PrivateRentsRooms
 ```
 
 ## 1. Who collected the InsideAirbnb data?
