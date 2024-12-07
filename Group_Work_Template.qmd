@@ -58,6 +58,7 @@ import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import fcluster, linkage
+from scipy.stats import entropy
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from PIL import Image
@@ -440,92 +441,236 @@ check_genuine(airbnb_gdf_ingenuine[1]) #you can also define random state, e.g. c
 ```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
-# Loading private rents data
+# Loading other data - Csv
 #_____________________________________________________________________________________________________________________________
-df_rentalprice = pd.read_csv(os.path.join('data','raw','onsrents.csv'))
-#_____________________________________________________________________________________________________________________________
-# Filtering data
-#_____________________________________________________________________________________________________________________________
-# Filtering for London boroughs based on Area Code 'E09'
-df_london = df_rentalprice[df_rentalprice['Area code'].str.startswith('E09')]
+raw_csvs_fn = ['Census_LSOA_Dwellings', 'Census_dwellings' 
+    ,'Census_Households', 'Census_Tenure', 'Census_Accommodation', 
+    'Census_BedroomOcc', 'Census_CarsVans', 'Census_Deprivation', 'Census_NsSeC', 
+    'Census_PopDensity', 'Census_Addresses', 'Sales-2024-09', 
+    'First-Time-Buyer-Former-Owner-Occupied-2024-09', 'New-and-Old-2024-09', 'onsrents']
+csv_skiprows = [6, 6 ,6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, None]
+csv_nrows = [4994, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 138543, 60219, 138543, 38390]
+csv_parse_dates = [None, None, None, None, None, None, None, None, None, None, None, None, ['Date'], ['Date'], ['Time period']]
+csv_usecols = [None, 
+    ['local authority: county / unitary (as of April 2023)', 'mnemonic', 'Total'] 
+    ,['mnemonic', '2021'],  
+    ['mnemonic', 'Owned', 'Shared ownership', 'Social rented', 'Private rented or lives rent free'], 
+    ['mnemonic', 'Detached', 'Semi-detached', 'Terraced', 'In a purpose-built block of flats or tenement','Part of a converted or shared house, including bedsits', 'Part of another converted building, for example, former school, church or warehouse', 'In a commercial building, for example, in an office building, hotel or over a shop'], 
+    ['mnemonic', 'Occupancy rating of bedrooms: +2 or more', 'Occupancy rating of bedrooms: +1', 'Occupancy rating of bedrooms: 0', 'Occupancy rating of bedrooms: -1', 'Occupancy rating of bedrooms: -2 or less'],
+    ['mnemonic', 'No cars or vans in household', '1 car or van in household', '2 cars or vans in household', '3 or more cars or vans in household'], 
+    ['mnemonic', 'Household is not deprived in any dimension', 'Household is deprived in one dimension', 'Household is deprived in two dimensions', 'Household is deprived in three dimensions', 'Household is deprived in four dimensions'],
+    ['mnemonic', 'L1, L2 and L3 Higher managerial, administrative and professional occupations', 'L4, L5 and L6 Lower managerial, administrative and professional occupations', 
+    'L7 Intermediate occupations', 'L8 and L9 Small employers and own account workers', 'L10 and L11 Lower supervisory and technical occupations', 'L12 Semi-routine occupations', 
+    'L13 Routine occupations', 'L14.1 and L14.2 Never worked and long-term unemployed', 'L15 Full-time students'], 
+    ['mnemonic', '2021'], 
+    ['mnemonic', 'Address one year ago is the same as the address of enumeration', 'Address one year ago is student term-time or boarding school address in the UK', 'Migrant from within the UK: Address one year ago was in the UK', 'Migrant from outside the UK: Address one year ago was outside the UK'],
+    None,
+    ['Date', 'Area_Code', 'First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'],
+    ['Date', 'Area_Code', 'New_Build_Average_Price', 'Existing_Property_Average_Price'], 
+    None]
 
-# Resetting the index of the filtered DataFrame
-df_london = df_london.reset_index(drop=True)
-
-# Ensure 'Time period' is in datetime format
-df_london['Time period'] = pd.to_datetime(df_london['Time period'], errors='coerce')
-
-# Define the start and end dates of the 2023-24 financial year
-# Filter the DataFrame to include only rows within this period
-start_date = pd.to_datetime("2023-04-01")
-end_date = pd.to_datetime("2024-03-31")
-filtered_rents = df_london[(df_london['Time period'] >= start_date) & (df_london['Time period'] <= end_date)]
-
-# Grouping by Area code and Time period, calculating the average index (assumed to be rental price)
-monthly_avg_rent = filtered_rents.groupby(['Area code', 'Area name', 'Time period'])['Rental price'].mean().reset_index()
-
-# Renaming the columns for clarity
-monthly_avg_rent.columns = ['Area code', 'Borough Name', 'Time period', 'Average Rental Price']
-
-# Display the result
-print(monthly_avg_rent)
+csv_dict = {
+    "raw_csvs_fn": raw_csvs_fn,
+    "csv_skiprows": csv_skiprows,
+    "csv_nrows": csv_nrows,
+    "csv_parse_dates": csv_parse_dates,
+    "csv_usecols": csv_usecols,
+}
+data_df = []
+for idx, item in enumerate(csv_dict["raw_csvs_fn"]):
+    df = pd.read_csv(os.path.join('data','raw', f"{item}.csv"), 
+         skiprows = csv_dict["csv_skiprows"][idx], 
+         nrows = csv_dict["csv_nrows"][idx], 
+         usecols = csv_dict["csv_usecols"][idx] 
+         ,parse_dates = csv_dict["csv_parse_dates"][idx]
+    )
+    data_df.append(df)
 ```
 
 ```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
-# Loading other data
+# Loading other data - Excel
 #_____________________________________________________________________________________________________________________________
-raw_csvs_fn = [
-    'Census_LSOA_Dwellings', 'Census_dwellings', 'Census_Households', 'Census_Tenure', 'Census_Accommodation', 'Census_BedroomOcc', 'Census_CarsVans', 'Census_Deprivation', 'Census_NsSeC', 'Census_PopDensity', 'Census_Addresses', 'Sales-2024-09', 
-    'First-Time-Buyer-Former-Owner-Occupied-2024-09', 'New-and-Old-2024-09', 'onsrents']
-skiprows = [6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 6, 0, 0, 0, None]
-nrows = [4994, 33, 33, 33, 33, 33, 33, 33, 33, 33, 33, 138543, 60219, 138543, None]
-parse_dates = [None, None, None, None, None, None, None, None, None, None, None, None, ['Date'], ['Date'], ['Date']]
-usecols = [
-    None, ['local authority: county / unitary (as of April 2023)', 'mnemonic', 'Total'], ['mnemonic', '2021'],  ['mnemonic', 'Owned', 'Shared ownership', 'Social rented', 'Private rented or lives rent free'], 
-    ['mnemonic', 'Detached', 'Semi-detached', 'Terraced', 'In a purpose-built block of flats or tenement','Part of a converted or shared house, including bedsits', 'Part of another converted building, for example, former school, church or warehouse', 
-    'In a commercial building, for example, in an office building, hotel or over a shop'], ['mnemonic', 'Occupancy rating of bedrooms: +2 or more', 'Occupancy rating of bedrooms: +1', 
-    'Occupancy rating of bedrooms: 0', 'Occupancy rating of bedrooms: -1', 'Occupancy rating of bedrooms: -2 or less'], ['mnemonic', 'No cars or vans in household', '1 car or van in household', 
-    '2 cars or vans in household', '3 or more cars or vans in household'], ['mnemonic', 'Household is not deprived in any dimension', 'Household is deprived in one dimension', 'Household is deprived in two dimensions', 
-    'Household is deprived in three dimensions', 'Household is deprived in four dimensions'], ['mnemonic', 'L1, L2 and L3 Higher managerial, administrative and professional occupations', 'L4, L5 and L6 Lower managerial, administrative and professional occupations', 
-    'L7 Intermediate occupations', 'L8 and L9 Small employers and own account workers', 'L10 and L11 Lower supervisory and technical occupations', 'L12 Semi-routine occupations', 
-    'L13 Routine occupations', 'L14.1 and L14.2 Never worked and long-term unemployed', 'L15 Full-time students'], ['mnemonic', '2021'], ['mnemonic', 'Address one year ago is the same as the address of enumeration', 
-    'Address one year ago is student term-time or boarding school address in the UK', 'Migrant from within the UK: Address one year ago was in the UK', 'Migrant from outside the UK: Address one year ago was outside the UK'], 
-    ['Date', 'Area_Code', 'First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'], ['Date', 'Area_Code', 'New_Build_Average_Price', 'Existing_Property_Average_Price'], None
+raw_excels_fn = [
+    'vacant-dwellings-borough.xlsx','hpssadataset9medianpricepaidforadministrativegeographies.xls',
+    'hpssadataset15lowerquartilepricepaidforadministrativegeographies.xls',
+    'Detailed_LA_20232024.xlsx','privaterentalmarketstatistics231220.xls','privaterentalmarketstatistics231220.xls',
+    'privaterentalmarketstatistics231220.xls','privaterentalmarketstatistics231220.xls'  
 ]
-csv_dict = {
-    "raw_csvs_fn": raw_csvs_fn,
-    "skiprows": skiprows,
-    "nrows": nrows,
-    "parse_dates": parse_dates,
-    "usecols": usecols,
+excel_skiprows = [1, 6, 6, 7, 6, 6, 6, 6]
+excel_nrows = [34, 331, 331, 310, 357, 357, 357, 357]
+excel_sheet_name = [ 2, 10, 10, 3, 12, 13, 14, 15]
+excel_usecols = [
+[0,21], [2,113], [2,113],[0,4,6,16],['Area Code1', 'Mean', 'Median'],
+['Area Code1', 'Mean', 'Median'],['Area Code1', 'Mean', 'Median'],['Area Code1', 'Mean', 'Median']
+]
+excel_dict = {
+    "raw_excels_fn": raw_excels_fn,
+    "excel_skiprows": excel_skiprows,
+    "excel_nrows": excel_nrows,
+    "excel_sheet_name": excel_sheet_name,
+    "excel_usecols": excel_usecols,
 }
-raw_csvs = []
-for idx, item in enumerate(csv_dict["raw_csvs_fn"]):
-
-    read_csv_kwargs = {
-        "skiprows": csv_dict["skiprows"][idx],
-        "nrows": csv_dict["nrows"][idx],
-        "usecols": csv_dict["usecols"][idx],
-        "parse_dates": csv_dict["parse_dates"][idx]
-    }
-    read_csv_kwargs = {k: v for k, v in read_csv_kwargs.items() if v is not None}
+for idx, item in enumerate(excel_dict["raw_excels_fn"]):
+    df = pd.read_excel(os.path.join('data','raw', f"{item}"), 
+         skiprows = excel_dict["excel_skiprows"][idx], 
+         nrows = excel_dict["excel_nrows"][idx], 
+         usecols = excel_dict["excel_usecols"][idx] 
+         ,sheet_name = excel_dict["excel_sheet_name"][idx]
+    )
+    first_col_name = df.columns[0]
+    df.rename(columns={first_col_name: 'mnemonic'}, inplace=True)
     
-    df = pd.read_csv(os.path.join('data', 'raw', f"{item}.csv"), **read_csv_kwargs)
-    raw_csvs.append(df)  #append the df to the list
+    data_df.append(df)
 ```
 
 ```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Drop NA and non-London rows. Filter the last step, because first item has codes by LSOA, not by borough
+#_____________________________________________________________________________________________________________________________
+# time_fltr = [df_hp_sales, df_hp_firsttime, df_hp_newbuild, df_rentalprice]
+# for idx, i in enumerate(time_fltr):
+#     i["Date"] = pd.to_datetime(i["Date"], errors='coerce')
+#     time_fltr[idx] = i.query("Date >= '2023-04-01' and Date < '2024-03-31'")
+# df_hp_sales, df_hp_firsttime, df_hp_newbuild, df_rentalprice = time_fltr
 
-raw_csvs[-3]
+
+for idx, df in enumerate(data_df):
+    for col in df.columns:
+        if isinstance(col, str) and pd.Series(col).str.contains('area.*code', case=False).any():
+            df.rename(columns={col: 'mnemonic'}, inplace=True)  
+    data_df[idx] = df[df['mnemonic'].notna()]
+
+for idx, df in enumerate(data_df[1:], start=1):
+    data_df[idx] = df[df['mnemonic'].str.startswith('E09', na=False)]
 ```
 
 ```{python}
-df_hp_firsttime = pd.read_csv("https://github.com/a-saveleva/FSDS_Slap/blob/main/house_prices/First-Time-Buyer-Former-Owner-Occupied-2024-09.csv?raw=true", 
-                                  skiprows = 0, nrows = 60219, parse_dates = ['Date'],
-                             usecols = ['Date', 'Area_Code', 'First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'])
-df_hp_firsttime
+len(data_df[-1])
+```
+
+```{python}
+data_df[-5].head()
+```
+
+```{python}
+#| echo: false
+(df_censusLSOAdwell, df_censusdwellings, df_censusHHolds, df_censusTenure, df_censusaccomm, 
+df_censusbedocc, df_censuscarsvans, df_censusdepriv, df_censusnssec, df_censuspopdens, df_censusaddress, df_hp_sales, df_hp_firsttime, 
+df_hp_newbuild, df_rentalprice, df_vacantprops,df_hp_median,df_hp_lower, df_homless_A2P,df_PRS1bed,df_PRS2bed,df_PRS3bed,df_PRS4bed
+) = data_df #We unpack the list, and assign new variable names
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Calculate entropy
+#_____________________________________________________________________________________________________________________________
+for_entropy = [df_censusTenure, df_censusaccomm, df_censusbedocc, df_censuscarsvans, df_censusdepriv, df_censusnssec, df_censusaddress]
+for_entropy_strings = ['Tenure_entropy', 'Accommm_entropy', 'Bedocc_entropy', 'Cars_entropy', 'Depriv_entropy', 'NsSEC_entropy', 'Address_entropy']
+
+for idx, i in enumerate(for_entropy):
+    array = np.array(i.iloc[:, 1:])  # Select all rows and columns starting from the second column
+    entropy_values = np.apply_along_axis(entropy, axis=1, arr=array)  # Apply entropy along each row (axis=1)
+    i[f"{for_entropy_strings[idx]}"] = entropy_values
+```
+
+```{python}
+df_censusdwellings.head()
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Rename columns for clarity
+#_____________________________________________________________________________________________________________________________
+df_censusdwellings = df_censusdwellings.rename(
+    columns={'local authority: county / unitary (as of April 2023)': 'LAName',
+             'Total': 'Total_Dwellings'}
+)
+df_censusHHolds = df_censusHHolds.rename(columns={'2021': 'Total_Hholds'})
+df_censuspopdens = df_censuspopdens.rename(columns={'2021': 'PopDensity'})
+df_vacantprops = df_vacantprops.rename(columns={2023: '2023_LTVacant'})
+df_hp_median = df_hp_median.rename(columns={'Year ending Mar 2023': 'MedianHP_2023'})
+df_hp_lower = df_hp_lower.rename(columns={'Year ending Mar 2023': 'LowerQHP_2023'})
+
+df_homless_A2P = df_homless_A2P.rename(columns={146430: 'HHoldsPrevDuty', 57340: 'HHoldEndAST', 37040: 'HHoldSellRelet'})
+
+df_PRS1bed = df_PRS1bed.rename(columns={'Mean': 'MeanOneBedRent2023', 'Median': 'MedianOneBedRent2023'})
+df_PRS2bed = df_PRS2bed.rename(columns={'Mean': 'MeanTwoBedRent2023', 'Median': 'MedianTwoBedRent2023'})
+df_PRS3bed = df_PRS3bed.rename(columns={'Mean': 'MeanThreeBedRent2023', 'Median': 'MedianThreeBedRent2023'})
+df_PRS4bed = df_PRS4bed.rename(columns={'Mean': 'MeanFourPlusBedRent2023', 'Median': 'MedianFourPlusBedRent2023'})
+df_rentalprice = df_rentalprice.rename(columns={'Time period': 'Date'})
+```
+
+```{python}
+df_rentalprice.head()
+```
+
+```{python}
+df_censusaccomm.head()
+```
+
+```{python}
+df_homless_A2P.head()
+```
+
+```{python}
+df_homless_A2P.head()
+```
+
+```{python}
+len(df_homless_A2P)
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Filter sales data for the finantial year
+#_____________________________________________________________________________________________________________________________
+time_fltr = [df_hp_sales, df_hp_firsttime, df_hp_newbuild, df_rentalprice]
+for idx, i in enumerate(time_fltr):
+    i["Date"] = pd.to_datetime(i["Date"], errors='coerce')
+    time_fltr[idx] = i.query("Date >= '2023-04-01' and Date < '2024-03-31'")
+df_hp_sales, df_hp_firsttime, df_hp_newbuild, df_rentalprice = time_fltr
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Calculate totals
+#_____________________________________________________________________________________________________________________________
+monthly_avg_rent = df_rentalprice.groupby(['mnemonic'])['Rental price'].mean().reset_index()
+df_hp_firsttime_totals = df_hp_firsttime.groupby(['mnemonic']).mean(['First_Time_Buyer_Average_Price', 'Former_Owner_Occupier_Average_Price'])
+df_hp_totals = df_hp_sales.groupby(['mnemonic']).sum(['Sales_Volume'])
+df_hp_newbuild_totals = df_hp_newbuild.groupby(['mnemonic']).mean(['New_Build_Average_Price', 'Existing_Property_Average_Price'])
+
+# df_homless_A2P.dropna(how='all', axis=1, inplace=True) 
+# df_homless_A2P.dropna(how='all', axis=0, inplace=True) 
+```
+
+```{python}
+df_homless_A2P.info()
+```
+
+```{python}
+#| echo: false
+#_____________________________________________________________________________________________________________________________
+# Transfrom columns
+#_____________________________________________________________________________________________________________________________
+df_homless_A2P['HHoldsPrevDuty'] = pd.to_numeric(df_homless_A2P['HHoldsPrevDuty'], errors='coerce')
+df_homless_A2P['HHoldEndAST'] = pd.to_numeric(df_homless_A2P['HHoldEndAST'], errors='coerce')
+df_homless_A2P['HHoldSellRelet'] = pd.to_numeric(df_homless_A2P['HHoldSellRelet'], errors='coerce')
+df_PRS3bed['MeanThreeBedRent2023'] = pd.to_numeric(df_PRS3bed['MeanThreeBedRent2023'], errors='coerce')
+df_PRS3bed['MedianThreeBedRent2023'] = pd.to_numeric(df_PRS3bed['MedianThreeBedRent2023'], errors='coerce')
+df_PRS4bed['MeanFourPlusBedRent2023'] = pd.to_numeric(df_PRS4bed['MeanFourPlusBedRent2023'], errors='coerce')
+df_PRS4bed['MedianFourPlusBedRent2023'] = pd.to_numeric(df_PRS4bed['MedianFourPlusBedRent2023'], errors='coerce')
+```
+
+```{python}
+df_homless_A2P.info()
 ```
 
 ## 1. Who collected the InsideAirbnb data?
