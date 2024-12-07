@@ -689,6 +689,10 @@ for df in rents_merge[1:]:
 #df_PrivateRentsRooms
 ```
 
+```{python}
+print("hello world")
+```
+
 ## 1. Who collected the InsideAirbnb data?
 
 ::: {.duedate}
