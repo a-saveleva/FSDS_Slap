@@ -209,11 +209,11 @@ def find_duplicates(df_valid):
 #_____________________________________________________________________________________________________________________________
 #   I perform cluster analysis a1nd mark listings from the same host that are within 300m from each other 
 #   (150m max location scattering as per Airbnb's anonymisation algorithm, x2). They constitute a cluster, and we then assess if they are a duplicate or not.
-#   The selected method computes pairwise distances  can calculate the distance matrix between all points in a group. 
+#   The selected method computes pairwise distances that can calculate the distance matrix between all points in a group. 
 #   Before this method I tried KNN, but the listings were paired incorrectly. 
 #   cdist solved this, and it is relatively light on small groups (our dataset is large, but it is split into small groups - by host).
 #
-#   It is possible, that listings outside clusters also could be in one entire home. E.g. there could be several hosts registered for one home.
+#   It is possible that listings outside clusters also could be in one entire home. E.g. there could be several hosts registered for one home.
 #   We acknowledge this gap, and advise this for further research.
 #_____________________________________________________________________________________________________________________________
     # Process each host group
@@ -273,7 +273,7 @@ def find_duplicates(df_valid):
             finddups1.loc[group.index, 'genuine'] = False  # Mark all as duplicates
             finddups1.loc[group.index[0], 'genuine'] = True  # First room becomes the genuine home
 #_____________________________________________________________________________________________________________________________
-#           but the geometry is replaced with centroid x and y.  
+#           For remaining valid homes the geometry is replaced with centroid x and y, taken from points in cluster.  
 #           Without this the point and all associated rooms can be aggregated by different spatial unit, considering the scale of the location approximation (up to 150m from origin).
 #           This is not crucial for our research, because we aggregate by borough, and potential aggregation errors will be minimal. But for other research with smaller geospatial units it will prove more useful.
 #_____________________________________________________________________________________________________________________________
@@ -441,6 +441,9 @@ def check_genuine(df, **kwargs):
 ```{python}
 #| echo: false
 check_genuine(airbnb_gdf_all[1]) #you can also define random state, e.g. check_genuine(airbnb_gdf_all[1],random_state=10)
+#_____________________________________________________________________________________________________________________________
+# Anna - this needs validation. Run this say 25 times and put how many results were correctly marked as dups
+#_____________________________________________________________________________________________________________________________
 ```
 
 ```{python}
