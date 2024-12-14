@@ -69,6 +69,10 @@ from urllib.parse import urlparse
 import base64  # Add this import at the top
 import IPython.display as display
 import random
+from pyproj import Proj, Transformer #for the distance to midpoint
+from scipy.stats import shapiro
+import scipy.stats as stats
+import seaborn as sns
 
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
@@ -114,6 +118,17 @@ def cache_data(src:str) -> str:
         
     return dfn
 ```
+
+
+Data on STL occupancy in London varies. Also, official occupancy cap does not sufficiently help describe "fair use" of Airbnb.
+We use the data provided by ONS: The number of guest nights, nights, and stays for short-term lets offered through online collaborative 
+economy platforms (Airbnb, Booking.com and Expedia Group). https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/guestnightsnightsandstaysforshorttermletsuk
+Matched with Hosts, listings, and bed spaces of short-term lets, UK: 2023. https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/hostslistingsandbedspacesofshorttermletsuk2023
+See more in text description of data cleaning and wrangling.
+
+According to this data, in December 2023 (month where there is overlap between 2 datasets), there were 152,050 nights spent in all 111,880 observed STLs in London, 5.84 nights per listing.
+We take this as a benchmark for "fair" use of Airbnb in London. Hosts that are available for longer than 5.84*12 days will be considereded as those taking advantage of the opportunity,
+which also means there is a possibility that they don't live in the flat.
 
 ```{python}
 #| echo: false
@@ -1147,6 +1162,234 @@ plt.show()
 # print("Done.")
 ```
 
+```{python}
+#___________________ extracting data needed for regression _______________
+# Extracting the percentage and the total number of vacant properties in 2023
+For_regressionV = df_CoreDemographics[['VacantPercent','2023_LTVacant', 'LAName', 'mnemonic']]
+
+# Display the first few rows to ensure it worked correctly
+print(For_regressionV.head())
+
+#print(df_rentalprice) 
+
+# Extracting Annual change column because we want to observe how the number of listings may influence the change in rental price
+For_RegressionR = df_rentalprice[['mnemonic', 'Area name', 'Annual change']]
+
+#print(For_RegressionR)
+
+# ______________________ calculating the distance to the centre _________
+
+# defining latitudes and longitude finder from london uk 
+lat_lon = [
+    (51.5014, -0.1419),  # Buckingham Palace
+    (51.5081, -0.0760),  # Tower of London
+    (51.5194, -0.1269),  # British Museum
+    (51.5007, -0.1246),  # Big Ben
+    (51.5033, -0.1195)   # London Eye
+]
+
+# Reprojecting coordinates to BNG (EPSG:27700)
+transformer = Transformer.from_crs("epsg:4326", "epsg:27700", always_xy=True)
+eastings_northings = [transformer.transform(lon, lat) for lat, lon in lat_lon]
+
+# Calculating midpoint
+eastings, northings = zip(*eastings_northings)
+midpoint = (np.mean(eastings), np.mean(northings))
+
+
+# Calculating centroids of each borough and distance to midpoint
+boro_gdf["centroid"] = boro_gdf.geometry.centroid
+boro_gdf["distance_to_midpoint"] = boro_gdf["centroid"].apply(
+    lambda point: np.sqrt((point.x - midpoint[0])**2 + (point.y - midpoint[1])**2)
+)
+
+
+# Display only the NAME and distance_to_midpoint columns
+#print(boro_gdf[['GSS_CODE', 'distance_to_midpoint', 'geometry']])
+
+print(diff2024_2023_boro)
+
+
+```
+
+```{python}
+from scipy.stats import shapiro
+import matplotlib.pyplot as plt
+import numpy as np
+import scipy.stats as stats
+import seaborn as sns
+
+
+#shapiro wilk test to see if the data is normally distributed
+#-------  on the listings data ---------
+
+# Perform the Shapiro-Wilk test
+stat, p_value = shapiro(diff2024_2023_boro["total_airbnbs"])
+
+# Display the results
+print(f"Shapiro-Wilk Test Statistic: {stat}")
+print(f"P-value: {p_value}")
+
+
+#the W values 0.7... is less than 1 (suggesting that the data is not normally distributed) and the p value 0.00000505 is <0.05
+#therefore the null hypothesis which assumes that the data is normally distributed is rejected 
+
+
+
+# ----------- Perform the test on the '2023' column ------ #
+stat, p_value = shapiro(For_regressionV["VacantPercent"])
+print(f"Shapiro-Wilk Test Statistic: {stat}")
+print(f"P-value: {p_value}")
+
+#Interpretation 
+#0.9465112270729066 W value close to one so its close to normal 
+#p value is 0.10520533110791175 greater than 0.05 so we can fail to reject the null hypothesis as there is no significant evidence
+#that the data is not normally distributes
+
+
+
+# Create Q-Q plot
+stats.probplot(For_regressionV["VacantPercent"], dist="norm", plot=plt)
+plt.show()
+
+#hist to actually visualise the distribution to determine whether we transform or not
+# Histogram with a density line
+sns.histplot(For_regressionV["VacantPercent"], kde=True, color="blue", bins=20)
+
+# Adding labels and title
+plt.xlabel('vacant properties')
+plt.ylabel('Density')
+plt.title('Histogram vacant properties')
+
+# Show plot
+plt.show()
+
+#as you can see it is still a bit skewed to the right
+
+
+
+#Now we'll do one for the rental price
+stat, p_value = shapiro(For_RegressionR['Annual change'])
+print(f"Shapiro-Wilk Test Statistic: {stat}")
+print(f"P-value: {p_value}")
+
+#owned
+stat, p_value = shapiro(boro_gdf['distance_to_midpoint'])
+print(f"Shapiro-Wilk Test Statistic: {stat}")
+print(f"P-value: {p_value}")
+
+
+# checking ifits skewed
+from scipy.stats import skew
+
+skew_vac = skew(For_regressionV['VacantPercent'])
+
+
+print(f"Skewness of Rented: {skew_vac}")
+
+
+'''
+The values are close to 0 althouhh the alues Skewness of Rented: -0.15706738004149598
+Skewness of Owned: 0.15761744307702397 suggest a slight skew them being so close to 0 and looking at the hist plots 
+and the fact that they are also percentages not counts means that transformation is not necessary
+'''
+
+
+
+
+
+'''
+From all of these normality tests we have decided to transform the change in commercial listings count and the number of vacant 
+properties, not only are they counts but tests for normality, skewness and descriptive visuals show that they are not normally distributed 
+which may violate the assumptions of a linear relationshio. Likewise by compressing large values it could make the spread of residuals
+more consistant across the range of data. 
+Limitations: overfitting? Potentially changing the interpretation. 
+'''
+```
+
+```{python}
+# Histograms for all variables to visualise distribution 
+# Histogram for "total_airbnbs"
+sns.histplot(diff2024_2023_boro["total_airbnbs"], kde=True, color="blue", bins=20)
+plt.xlabel('Total Airbnbs')
+plt.ylabel('Density')
+plt.title('Histogram of Total Airbnbs')
+plt.show()
+
+# Histogram for "VacantPercent"
+sns.histplot(For_regressionV["VacantPercent"], kde=True, color="green", bins=20)
+plt.xlabel('Vacant Percent')
+plt.ylabel('Density')
+plt.title('Histogram of Vacant Percent')
+plt.show()
+
+# Histogram for "Annual Change"
+sns.histplot(For_RegressionR['Annual change'], kde=True, color="orange", bins=20)
+plt.xlabel('Annual Change')
+plt.ylabel('Density')
+plt.title('Histogram of Annual Change')
+plt.show()
+
+# Histogram for "distance_to_midpoint"
+sns.histplot(boro_gdf['distance_to_midpoint'], kde=True, color="purple", bins=20)
+plt.xlabel('Distance to Midpoint')
+plt.ylabel('Density')
+plt.title('Histogram of Distance to Midpoint')
+plt.show()
+```
+
+```{python}
+#______________ merging the data for the regression model __________
+
+
+
+# Merge using different column names
+vacantprops_airbnb = pd.merge(For_regressionV[['mnemonic', 'LAName', 'VacantPercent']],  
+                                   diff2024_2023_boro[['GSS_CODE', 'total_airbnbs']], 
+                                   left_on='mnemonic',  
+                                   right_on='GSS_CODE',  
+                                   how='left')
+
+# Print the first few rows of the merged DataFrame
+#print(vacantprops_airbnb.head())
+
+
+#Adding rents
+Adding_more = pd.merge(
+    vacantprops_airbnb, 
+    For_RegressionR[['mnemonic', 'Annual change']], 
+    left_on='mnemonic',  # Merge on LAcode from vacantprops_with_tenure
+    right_on='mnemonic',  # Merge on GSS_CODE from merged_borough_counts
+    how='inner'  # Inner join to only keep matching rows
+)
+
+# Merging the result with boro to add Distance to Midpoint
+Regression_Final = pd.merge(
+    Adding_more, 
+    boro_gdf[['GSS_CODE', 'distance_to_midpoint', 'geometry']], 
+    on='GSS_CODE',  # Merge on GSS_CODE which is common
+    how='inner'  # Inner join to keep only matching rows
+)
+
+# Display the final merged dataframe
+#print(Regression_Final)
+
+
+# Display the DataFrame after dropping redundant columns
+#print(merged_boroughs_unique)
+
+# Removing duplicate columns if any
+Regression_Final = Regression_Final.loc[:, ~Regression_Final.columns.duplicated()]
+
+
+#print(Regression_Final)
+
+# Dropping the redundant ',mnemonic' column after merging
+Regresion_Final = Regression_Final.drop(columns=['mnemonic'], errors = 'ignore')
+
+print(Regression_Final)
+```
+
 ## 1. Who collected the InsideAirbnb data?
 
 ::: {.duedate}
@@ -1228,3 +1471,4 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
+
