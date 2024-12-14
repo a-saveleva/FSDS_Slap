@@ -1,0 +1,51 @@
+
+"TS045 - Car or van availability"
+"ONS Crown Copyright Reserved [from Nomis on 27 November 2024]"
+"Population :","All households"
+"Units      :","Households"
+"Date       :","2021"
+
+"local authority: county / unitary (as of April 2023)","mnemonic","Total: All households","No cars or vans in household","1 car or van in household","2 cars or vans in household","3 or more cars or vans in household"
+
+"Barking and Dagenham","E09000002",100.0,34.8,44.9,16.1,4.2
+"Barnet","E09000003",100.0,29.9,45.0,19.5,5.6
+"Bexley","E09000004",100.0,22.4,45.4,23.8,8.5
+"Brent","E09000005",100.0,44.1,39.0,12.9,4.0
+"Bromley","E09000006",100.0,22.9,46.4,22.8,7.9
+"Camden","E09000007",100.0,63.6,30.2,5.2,1.0
+"City of London","E09000001",100.0,77.2,19.4,2.5,0.9
+"Croydon","E09000008",100.0,33.6,43.2,17.4,5.8
+"Ealing","E09000009",100.0,36.8,43.8,15.1,4.3
+"Enfield","E09000010",100.0,31.0,44.3,18.5,6.1
+"Greenwich","E09000011",100.0,43.1,42.4,11.4,3.0
+"Hackney","E09000012",100.0,64.9,30.5,3.9,0.7
+"Hammersmith and Fulham","E09000013",100.0,57.5,35.4,6.1,1.1
+"Haringey","E09000014",100.0,52.7,38.0,7.8,1.5
+"Harrow","E09000015",100.0,24.7,44.2,23.5,7.5
+"Havering","E09000016",100.0,21.5,44.1,24.9,9.4
+"Hillingdon","E09000017",100.0,22.3,44.0,24.8,8.9
+"Hounslow","E09000018",100.0,32.8,44.2,17.4,5.6
+"Islington","E09000019",100.0,66.9,28.7,3.7,0.7
+"Kensington and Chelsea","E09000020",100.0,58.3,32.7,7.4,1.6
+"Kingston upon Thames","E09000021",100.0,25.7,47.9,20.4,6.0
+"Lambeth","E09000022",100.0,58.0,34.5,6.1,1.3
+"Lewisham","E09000023",100.0,47.7,40.9,9.2,2.2
+"Merton","E09000024",100.0,33.0,47.5,15.4,4.0
+"Newham","E09000025",100.0,51.7,37.8,8.6,1.9
+"Redbridge","E09000026",100.0,27.5,45.5,20.3,6.7
+"Richmond upon Thames","E09000027",100.0,25.4,51.7,18.3,4.5
+"Southwark","E09000028",100.0,60.3,33.2,5.5,1.0
+"Sutton","E09000029",100.0,22.8,47.0,22.8,7.4
+"Tower Hamlets","E09000030",100.0,66.4,28.7,4.2,0.7
+"Waltham Forest","E09000031",100.0,42.1,42.7,11.9,3.3
+"Wandsworth","E09000032",100.0,47.9,42.0,8.5,1.6
+"Westminster","E09000033",100.0,66.2,27.7,4.9,1.1
+
+
+
+"","In order to protect against disclosure of personal information, records"
+"","have been swapped between different geographic areas and counts perturbed"
+"","by small amounts. Small counts at the lowest geographies will be most"
+"","affected."
+"",""
+
