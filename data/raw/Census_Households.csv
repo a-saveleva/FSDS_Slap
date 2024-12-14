@@ -1,0 +1,51 @@
+
+"TS011 - Households by deprivation dimensions"
+"ONS Crown Copyright Reserved [from Nomis on 28 November 2024]"
+"Population :","All households"
+"Units      :","Households"
+"Household deprivation:","Total: All households"
+
+"local authority: county / unitary (as of April 2023)","mnemonic","2021"
+
+"Barking and Dagenham","E09000002",73902
+"Barnet","E09000003",148921
+"Bexley","E09000004",95299
+"Brent","E09000005",118612
+"Bromley","E09000006",135827
+"Camden","E09000007",92759
+"City of London","E09000001",4914
+"Croydon","E09000008",152946
+"Ealing","E09000009",133658
+"Enfield","E09000010",120920
+"Greenwich","E09000011",114052
+"Hackney","E09000012",106081
+"Hammersmith and Fulham","E09000013",81244
+"Haringey","E09000014",105095
+"Harrow","E09000015",89642
+"Havering","E09000016",101277
+"Hillingdon","E09000017",109228
+"Hounslow","E09000018",102961
+"Islington","E09000019",96496
+"Kensington and Chelsea","E09000020",66884
+"Kingston upon Thames","E09000021",65626
+"Lambeth","E09000022",134688
+"Lewisham","E09000023",122392
+"Merton","E09000024",81729
+"Newham","E09000025",115507
+"Redbridge","E09000026",103713
+"Richmond upon Thames","E09000027",80705
+"Southwark","E09000028",130818
+"Sutton","E09000029",82348
+"Tower Hamlets","E09000030",120539
+"Waltham Forest","E09000031",102901
+"Wandsworth","E09000032",137392
+"Westminster","E09000033",94815
+
+
+
+"","In order to protect against disclosure of personal information, records"
+"","have been swapped between different geographic areas and counts perturbed"
+"","by small amounts. Small counts at the lowest geographies will be most"
+"","affected."
+"",""
+

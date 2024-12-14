@@ -1,0 +1,51 @@
+
+"RM205 - Dwelling type"
+"ONS Crown Copyright Reserved [from Nomis on 27 November 2024]"
+"Population :","Dwellings"
+"Units      :","Persons"
+"Date       :","2021"
+
+"local authority: county / unitary (as of April 2023)","mnemonic","Total","Shared dwelling","Unshared dwelling"
+
+"Barking and Dagenham","E09000002",76955,20,76935
+"Barnet","E09000003",156147,228,155919
+"Bexley","E09000004",99312,11,99301
+"Brent","E09000005",127860,130,127730
+"Bromley","E09000006",142082,31,142051
+"Camden","E09000007",108236,25,108211
+"City of London","E09000001",7323,0,7323
+"Croydon","E09000008",162273,168,162105
+"Ealing","E09000009",142126,133,141993
+"Enfield","E09000010",128056,60,127996
+"Greenwich","E09000011",121014,93,120921
+"Hackney","E09000012",116341,50,116291
+"Hammersmith and Fulham","E09000013",92893,35,92858
+"Haringey","E09000014",113329,167,113162
+"Harrow","E09000015",94793,43,94750
+"Havering","E09000016",106557,23,106534
+"Hillingdon","E09000017",115474,57,115417
+"Hounslow","E09000018",108134,122,108012
+"Islington","E09000019",106896,23,106873
+"Kensington and Chelsea","E09000020",89229,44,89185
+"Kingston upon Thames","E09000021",68885,130,68755
+"Lambeth","E09000022",146411,144,146267
+"Lewisham","E09000023",131452,96,131356
+"Merton","E09000024",86623,48,86575
+"Newham","E09000025",125013,100,124913
+"Redbridge","E09000026",107489,89,107400
+"Richmond upon Thames","E09000027",85587,20,85567
+"Southwark","E09000028",141960,64,141896
+"Sutton","E09000029",85249,42,85207
+"Tower Hamlets","E09000030",134473,41,134432
+"Waltham Forest","E09000031",108172,55,108117
+"Wandsworth","E09000032",150467,67,150400
+"Westminster","E09000033",128913,40,128873
+
+
+
+"","In order to protect against disclosure of personal information, records"
+"","have been swapped between different geographic areas and counts perturbed"
+"","by small amounts. Small counts at the lowest geographies will be most"
+"","affected."
+"",""
+
