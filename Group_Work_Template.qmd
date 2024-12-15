@@ -80,6 +80,7 @@ import esda
 from splot.esda import moran_scatterplot
 from splot.esda import plot_local_autocorrelation
 from scipy.stats import skew
+from libpysal.weights import Queen
 
 
 
@@ -1174,6 +1175,8 @@ plt.show()
 ## Ordinary Least Squares Regression
 
 ```{python}
+# #| echo: false
+
 #___________________ extracting data needed for regression _______________
 # Extracting the percentage and the total number of vacant properties in 2023
 For_regressionV = df_CoreDemographics[['VacantPercent','2023_LTVacant', 'LAName', 'mnemonic']]
@@ -1222,11 +1225,7 @@ boro_gdf["distance_to_midpoint"] = boro_gdf["centroid"].apply(
 ```
 
 ```{python}
-from scipy.stats import shapiro
-import matplotlib.pyplot as plt
-import numpy as np
-import scipy.stats as stats
-import seaborn as sns
+# #| echo: false
 
 
 #shapiro wilk test to see if the data is normally distributed
@@ -1295,10 +1294,11 @@ skew_vac = skew(For_regressionV['VacantPercent'])
 
 
 print(f"Skewness of Rented: {skew_vac}")
-
 ```
 
 ```{python}
+# #| echo: false
+
 # Histograms for all variables to visualise distribution 
 # Histogram for "total_airbnbs"
 sns.histplot(diff2024_2023_boro["total_airbnbs"], kde=True, color="blue", bins=20)
@@ -1330,6 +1330,8 @@ plt.show()
 ```
 
 ```{python}
+# #| echo: false
+
 #______ ________ merging the data for the regression model __________
 
 
@@ -1442,23 +1444,10 @@ _, p_value, _, _ = het_white(residuals, model.model.exog)
 #print(f'White test p-value: {p_value}')
 ```
 
-
-"The average rent in London is now £2,121 per month after +4.2% growth in the last year. The cheapest average rent is in Bexley (£1,520) and the highest average rent is in Kensington and Chelsea (£3,459), although rental increases are slowing in the most expensive parts of the city". (Zoopla, 2024) https://www.zoopla.co.uk/discover/property-news/average-rent-london/
-
-**Interpreting the regression model**
-
-Our analysis revealed that the rise in short-term rentals like Airbnb could play a key role in driving changes in rental prices. The data suggests that for every 1% increase in the number of Airbnb listings, the change in rental prices grew by 0.065%. In areas where Airbnb listings would have doubled (so an 100% increase), rents would have risen by an average of 6.5%. For tenants, this result in significant price increases: in central London, where average rents are around £2,121 per month, a 6.5% rise would add approximately £138 per month, or £1,656 per year. In high-end boroughs like Kensington and Chelsea, tenants would face rent hikes of nearly £2,700 per year. 
-
-Besides Airbnb, the model results also show that proximity to the city center also would influence rental prices, with neighborhoods closer to the centre seeing an additional 0.34% for every kilometer closer. However, vacancy rates showed little connection to rent changes. These findings highlight how the expansion of Airbnb is reshaping London’s rental market, putting additional pressure on long-term tenants already facing rising costs.
-
-However, the story doesn’t end with just the numbers. The analysis revealed that changes in rental prices are not evenly spread across the city. Although there were no signs of multicolinearity between the independent variables, meaning they didn’t overlap or interfere with each other. Tests on the errors (residuals) displayed uneven patterns in the data, and further spatial analysis confirmed significant clustering of rental price changes. Areas in central London stand out with clear High-High clusters, where rents are rising quickly and are surrounded by similarly high increases. In contrast, Low-Low clusters dominate the outer boroughs, where rent changes remain much smaller.
-
-A closer look at the spatial patterns on the Local Morans I cluster map also uncovered outliers – places where neighborhoods with rising rents sit next to areas where prices are barely changing. These findings highlight the uneven impact of Airbnb and other pressures on London’s rental market, particularly in central areas.
-
-To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionaly, a more robust regression model can be undertaken that accounts for the uneven spread of residuals. 
-
 ```{python}
-#checking the VIF
+# #| echo: false
+
+#checking the VIF 
 from statsmodels.stats.outliers_influence import variance_inflation_factor
 from statsmodels.tools.tools import add_constant
 
@@ -1479,8 +1468,10 @@ print(vif_data)
 **plotting the residuals**
 
 ```{python}
+# #| echo: false
+
 # ____________ checking morans I for any spatial autocorellation ____
-print(type(Regression_Final1))
+#print(type(Regression_Final1))
 
 # needs to be a geopandas data frame 
 Rgdf = gpd.GeoDataFrame(Regression_Final1, geometry='geometry') #Rgdf - residuals gdf
@@ -1494,6 +1485,7 @@ print(Rgdf.crs)
 
 # Generate spatial weights matrix
 w = Queen.from_dataframe(Rgdf)
+
 
 # Standardize weights matrix (required for Moran's I)
 w.transform = 'R'
@@ -1511,17 +1503,16 @@ lisa = esda.Moran_Local(Rgdf.residuals, w)
 Rgdf['sig'] = lisa.p_sim < 0.05
 # Store the quadrant they belong to
 Rgdf['quad'] = lisa.q
-Rgdf[['LAName','residuals','sig','quad']].sample(5, random_state=42)
+Rgdf[['LAName','residuals','sig','quad']]
 
 #print(Rgdf)
 
 plot_local_autocorrelation(lisa, Rgdf, 'residuals')
-
-
 ```
 
-
 ```{python}
+# #| echo: false
+
 # ______________ A more robust model but can do echo = false because its just adding too much _______
 
 import statsmodels.api as sm
@@ -1554,7 +1545,6 @@ plt.xlabel('Fitted Values')
 plt.ylabel('Residuals')
 plt.title('Residuals vs Fitted Values (Robust Model)')
 plt.show()
-
 ```
 
 ## 1. Who collected the InsideAirbnb data?
