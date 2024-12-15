@@ -82,8 +82,6 @@ from splot.esda import plot_local_autocorrelation
 from scipy.stats import skew
 
 
-
-
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
 ```
@@ -128,16 +126,6 @@ def cache_data(src:str) -> str:
         
     return dfn
 ```
-
-Data on STL occupancy in London varies. Also, official occupancy cap does not sufficiently help describe "fair use" of Airbnb.
-We use the data provided by ONS: The number of guest nights, nights, and stays for short-term lets offered through online collaborative 
-economy platforms (Airbnb, Booking.com and Expedia Group). https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/guestnightsnightsandstaysforshorttermletsuk
-Matched with Hosts, listings, and bed spaces of short-term lets, UK: 2023. https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/hostslistingsandbedspacesofshorttermletsuk2023
-See more in text description of data cleaning and wrangling.
-
-According to this data, in December 2023 (month where there is overlap between 2 datasets), there were 152,050 nights spent in all 111,880 observed STLs in London, 5.84 nights per listing.
-We take this as a benchmark for "fair" use of Airbnb in London. Hosts that are available for longer than 5.84*12 days will be considereded as those taking advantage of the opportunity,
-which also means there is a possibility that they don't live in the flat.
 
 ```{python}
 #| echo: false
@@ -365,10 +353,10 @@ for df in airbnb_gdfs:
     df = df[(df['availability_365']) > (5.84*12)] #Filtering by "commercial" - rented out more than average per month for London. Average is 5.84 days
 
     print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long (multi-listing hosts only).\n")
-    print(f"Appending cleaned data frame to single-listing hosts data frame, and storing everything in list airbnb_gdf_clean.\n")
+    print(f"Appending cleaned data frame to single-listing hosts data frame, and storing everything in list airbnb_gdf_clean.")
     
     airbnb_gdf_clean.append(df)
-    print("Done.")
+    print("Done.\n")
 ```
 
 ```{python}
@@ -515,7 +503,7 @@ csv_dict = {
 }
 data_df = []
 for idx, item in enumerate(csv_dict["raw_csvs_fn"]):
-    df = pd.read_csv(os.path.join('data','raw', f"{item}.csv"), 
+    df = pd.read_csv(f"data/raw/{item}.csv", 
          skiprows = csv_dict["csv_skiprows"][idx], 
          nrows = csv_dict["csv_nrows"][idx], 
          usecols = csv_dict["csv_usecols"][idx] 
@@ -823,6 +811,7 @@ ax.set_ylim(155000, 202000)
 #| echo: false
 print(f"We have identified {len(airbnb_gdf_clean[0])} valid listings in 2023, and {len(airbnb_gdf_clean[1])} valid listings in 2024.")
 print(f"It accounted for {len(airbnb_gdf_clean[0])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% and {len(airbnb_gdf_clean[1])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% of total dwellings respectively. \nThe number of dwellings is based on 2021 Census.\n")
+print(f"This does not consider 2024 completions.")
 
 print(f"In 2023, there were:")
 print(airbnb_gdf_clean[0]['room_type'].value_counts())
@@ -891,121 +880,6 @@ diff2024_2023_boro["total_airbnbs"].hist()
 
 ```{python}
 #| echo: false
-# fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-
-# # Plot using 'total_other' as the value for coloring
-# diff2024_2023_boro.plot(column='total_entireha', ax=axes[0], legend=True,
-#                     legend_kwds={'label': "Difference in Points by Area",
-#                                  'orientation': "horizontal"},
-#                     cmap='Reds', edgecolor='black')
-
-# # Add title and labels
-# axes[0].set_title("Difference in count of the AirBnb locations available as \"Entire home/apt\" rentals by Borough, 2024-2023", fontsize=8)
-# axes[0].set_xlabel("Longitude")
-# axes[0].set_ylabel("Latitude")
-
-# diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
-#                     legend_kwds={'label': "Difference in Points by Area",
-#                                  'orientation': "horizontal"},
-#                     cmap='Reds', edgecolor='black')
-
-# # Add title and labels
-# axes[1].set_title("Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
-# axes[1].set_xlabel("Longitude")
-# axes[1].set_ylabel("Latitude")
-
-# # Show the plot
-# plt.tight_layout()
-# plt.show()
-```
-
-```{python}
-# #| echo: false
-# # Determine the min and max values across both columns
-# vmin = min(diff2024_2023_boro['total_entireha'].min(), diff2024_2023_boro['total_privateroom'].min())
-# vmax = max(diff2024_2023_boro['total_entireha'].max(), diff2024_2023_boro['total_privateroom'].max())
-
-# # Set the midpoint value
-# midpoint = 1
-
-# # Create a TwoSlopeNorm instance
-# norm = TwoSlopeNorm(vmin=vmin, vcenter=midpoint, vmax=vmax)
-
-# # Create the subplots
-# fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-
-# # Plot 'total_entireha' with shared color scale and custom normalization
-# diff2024_2023_boro.plot(column='total_entireha', ax=axes[0], legend=True,
-#                         legend_kwds={'label': "Difference in Points by Area",
-#                                      'orientation': "horizontal"},
-#                         cmap='Spectral_r', edgecolor='black',
-#                         norm=norm)  # Apply custom normalization
-
-# # Add title and labels
-# axes[0].set_title("Difference in count of the AirBnb locations available as \"Entire home/apt\" rentals by Borough, 2024-2023", fontsize=8)
-# axes[0].set_xlabel("Longitude")
-# axes[0].set_ylabel("Latitude")
-
-# # Plot 'total_privateroom' with shared color scale and custom normalization
-# diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
-#                         legend_kwds={'label': "Difference in Points by Area",
-#                                      'orientation': "horizontal"},
-#                         cmap='Spectral_r', edgecolor='black',
-#                         norm=norm)  # Apply custom normalization
-
-# # Add title and labels
-# axes[1].set_title("Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
-# axes[1].set_xlabel("Longitude")
-# axes[1].set_ylabel("Latitude")
-
-# # Adjust layout for better spacing
-# plt.tight_layout()
-# plt.show()
-```
-
-```{python}
-#| echo: false
-# Determine the min and max values across both columns
-vmin = min(diff2024_2023_boro['total_entireha'].min(), diff2024_2023_boro['total_privateroom'].min())
-vmax = max(diff2024_2023_boro['total_entireha'].max(), diff2024_2023_boro['total_privateroom'].max())
-
-# Create a TwoSlopeNorm instance
-norm = TwoSlopeNorm(vmin=-65, vcenter=0, vmax=65)
-
-# Create the subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-
-# Plot 'total_entireha' with shared color scale and custom normalization
-diff2024_2023_boro.plot(column='total_entireha', ax=axes[0], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='black',
-                        norm=norm)  # Apply custom normalization
-
-# Add title and labels
-axes[0].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"Entire home/apt\" rentals by Borough, 2024-2023", fontsize=8)
-axes[0].set_xlabel("Longitude")
-axes[0].set_ylabel("Latitude")
-
-# Plot 'total_privateroom' with shared color scale and custom normalization
-diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='black',
-                        norm=norm)  # Apply custom normalization
-
-# Add title and labels
-axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
-axes[1].set_xlabel("Longitude")
-axes[1].set_ylabel("Latitude")
-
-# Adjust layout for better spacing
-plt.tight_layout()
-plt.show()
-```
-
-```{python}
-#| echo: false
 # Determine the min and max values across both columns
 vmin = min(diff2024_2023_boro['total_entireha'].min(), diff2024_2023_boro['total_privateroom'].min())
 vmax = max(diff2024_2023_boro['total_entireha'].max(), diff2024_2023_boro['total_privateroom'].max())
@@ -1055,6 +929,8 @@ axes[1].set_ylabel("Latitude")
 # Adjust layout for better spacing
 plt.tight_layout()
 plt.show()
+
+print(f"The number of entire homes per borough grew more, than the overall number of listings.")
 ```
 
 ```{python}
@@ -1096,11 +972,13 @@ axes[1].set_ylabel("Latitude")
 # Adjust layout for better spacing
 plt.tight_layout()
 plt.show()
+
+print(f"While number of private rooms dropped, the number of entire homes increased considerably. It is possible that the flats with rooms on airbnb converted to entire homes listings.")
 ```
 
 ```{python}
 # #| echo: false
-# # write the data to be used in further analysis
+# # write the data to be used in further analysis (ONLY IF NEEDED. CODE WORKS WITHOUT THIS)
 # fn = "borough_counts.csv"
 # path = os.path.join('data','clean')
 
@@ -1111,11 +989,7 @@ plt.show()
 # boro_count_gdf.to_csv(os.path.join(path,fn), index=False)
 # #boro_count_gdf.to_file("boro_count.geoparquet")
 # print("Done.")
-```
 
-```{python}
-# #| echo: false
-# # write the data to be used in further analysis
 # fn = "lsoa_counts.csv"
 # path = os.path.join('data','clean')
 
@@ -1437,6 +1311,8 @@ print(vif_data)
 
 ```{python}
 # ____________ checking morans I for any spatial autocorellation ____
+from pysal.lib import weights
+
 print(type(Regression_Final1))
 
 # needs to be a geopandas data frame 
@@ -1450,7 +1326,7 @@ print(Rgdf.crs)
 # ___________ Morans I ____________
 
 # Generate spatial weights matrix
-w = Queen.from_dataframe(Rgdf)
+w = weights.Queen.from_dataframe(Rgdf)
 
 # Standardize weights matrix (required for Moran's I)
 w.transform = 'R'
@@ -1459,6 +1335,7 @@ w.transform = 'R'
 mi = esda.Moran(Rgdf['residuals'], w)
 print(f"{mi.I:0.4f}")
 print(f"{mi.p_sim:0.4f}")
+
 #moran_scatterplot(mi)
 
 # ________ local Morans I on the residuals ___________
@@ -1482,6 +1359,7 @@ plot_local_autocorrelation(lisa, Rgdf, 'residuals')
 # ______________ A more robust model but can do echo = false because its just adding too much _______
 
 import statsmodels.api as sm
+
 
 # Assuming 'X' is the independent variable(s) and 'y' is the dependent variable
 model = sm.OLS(y, X)  # Create the OLS model
@@ -1511,7 +1389,6 @@ plt.xlabel('Fitted Values')
 plt.ylabel('Residuals')
 plt.title('Residuals vs Fitted Values (Robust Model)')
 plt.show()
-
 ```
 
 ## 1. Who collected the InsideAirbnb data?
