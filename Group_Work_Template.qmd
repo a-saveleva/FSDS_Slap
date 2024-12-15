@@ -80,8 +80,6 @@ import esda
 from splot.esda import moran_scatterplot
 
 
-
-
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
 ```
@@ -464,19 +462,6 @@ check_genuine(airbnb_gdf_all[1]) #you can also define random state, e.g. check_g
 ```
 
 ```{python}
-print(os.path.join('data','raw', f"Census_LSOA_Dwellings.csv"))
-```
-
-```{python}
-os.getcwd()
-```
-
-```{python}
-pd.read_csv('work/Documents/UCL/CASA0013/FSDS_Slap/data/raw/Census_LSOA_Dwellings.csv')
-```
-
-
-```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
 # Loading other data - Csv
@@ -516,7 +501,7 @@ csv_dict = {
 }
 data_df = []
 for idx, item in enumerate(csv_dict["raw_csvs_fn"]):
-    df = pd.read_csv(f"/data/raw/{item}.csv", 
+    df = pd.read_csv(f"data/raw/{item}.csv", 
          skiprows = csv_dict["csv_skiprows"][idx], 
          nrows = csv_dict["csv_nrows"][idx], 
          usecols = csv_dict["csv_usecols"][idx] 
@@ -824,6 +809,7 @@ ax.set_ylim(155000, 202000)
 #| echo: false
 print(f"We have identified {len(airbnb_gdf_clean[0])} valid listings in 2023, and {len(airbnb_gdf_clean[1])} valid listings in 2024.")
 print(f"It accounted for {len(airbnb_gdf_clean[0])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% and {len(airbnb_gdf_clean[1])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% of total dwellings respectively. \nThe number of dwellings is based on 2021 Census.\n")
+print(f"This does not consider 2024 completions.")
 
 print(f"In 2023, there were:")
 print(airbnb_gdf_clean[0]['room_type'].value_counts())
@@ -941,6 +927,8 @@ axes[1].set_ylabel("Latitude")
 # Adjust layout for better spacing
 plt.tight_layout()
 plt.show()
+
+print(f"The number of entire homes per borough grew more, than the overall number of listings.")
 ```
 
 ```{python}
@@ -982,6 +970,8 @@ axes[1].set_ylabel("Latitude")
 # Adjust layout for better spacing
 plt.tight_layout()
 plt.show()
+
+print(f"While number of private rooms dropped, the number of entire homes increased considerably. It is possible that the flats with rooms on airbnb converted to entire homes listings.")
 ```
 
 ```{python}
@@ -1055,7 +1045,7 @@ boro_gdf["distance_to_midpoint"] = boro_gdf["centroid"].apply(
 # Display only the NAME and distance_to_midpoint columns
 #print(boro_gdf[['GSS_CODE', 'distance_to_midpoint', 'geometry']])
 
-print(diff2024_2023_boro)
+#print(diff2024_2023_boro)
 ```
 
 ```{python}
@@ -1317,6 +1307,8 @@ print(vif_data)
 
 ```{python}
 # ____________ checking morans I for any spatial autocorellation ____
+from pysal.lib import weights
+
 print(type(Regression_Final1))
 
 # needs to be a geopandas data frame 
@@ -1330,7 +1322,7 @@ print(Rgdf.crs)
 # ___________ Morans I ____________
 
 # Generate spatial weights matrix
-w = Queen.from_dataframe(Rgdf)
+w = weights.Queen.from_dataframe(Rgdf)
 
 # Standardize weights matrix (required for Moran's I)
 w.transform = 'R'
