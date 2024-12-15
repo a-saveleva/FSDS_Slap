@@ -78,6 +78,8 @@ import statsmodels.stats.api as sms
 from statsmodels.stats.api import het_breuschpagan
 import esda
 from splot.esda import moran_scatterplot
+from splot.esda import plot_local_autocorrelation
+from scipy.stats import skew
 
 
 pd.set_option('display.max_columns', None)
@@ -1000,6 +1002,8 @@ print(f"While number of private rooms dropped, the number of entire homes increa
 # print("Done.")
 ```
 
+## Ordinary Least Squares Regression
+
 ```{python}
 #___________________ extracting data needed for regression _______________
 # Extracting the percentage and the total number of vacant properties in 2023
@@ -1123,24 +1127,6 @@ skew_vac = skew(For_regressionV['VacantPercent'])
 
 print(f"Skewness of Rented: {skew_vac}")
 
-
-'''
-The values are close to 0 althouhh the alues Skewness of Rented: -0.15706738004149598
-Skewness of Owned: 0.15761744307702397 suggest a slight skew them being so close to 0 and looking at the hist plots 
-and the fact that they are also percentages not counts means that transformation is not necessary
-'''
-
-
-
-
-
-'''
-From all of these normality tests we have decided to transform the change in commercial listings count and the number of vacant 
-properties, not only are they counts but tests for normality, skewness and descriptive visuals show that they are not normally distributed 
-which may violate the assumptions of a linear relationshio. Likewise by compressing large values it could make the spread of residuals
-more consistant across the range of data. 
-Limitations: overfitting? Potentially changing the interpretation. 
-'''
 ```
 
 ```{python}
@@ -1220,7 +1206,7 @@ Regression_Final = Regression_Final.loc[:, ~Regression_Final.columns.duplicated(
 Regression_Final1 = Regression_Final.drop(columns=['mnemonic'], errors='ignore')
 
 # Print the final DataFrame
-print(Regression_Final1.head())
+#print(Regression_Final1.head())
 
 #______ grouping the rows by borough ______
 
@@ -1233,14 +1219,14 @@ Regression_Final = Regression_Final1.groupby('LAName').agg({
 }).reset_index()
 
 # Print the grouped DataFrame
-print(Regression_Final)
+#print(Regression_Final)
 
 
 Regression_Final1.loc[:, 'distance_to_midpoint_km'] = Regression_Final1['distance_to_midpoint'] / 1000
 #the scale should not dominate others numerically which is why the distance to the centre is being calculated in km
 
 # Viewing the new column to ensure the operation worked
-Regression_Final1[['distance_to_midpoint', 'distance_to_midpoint_km']].head()
+#Regression_Final1[['distance_to_midpoint', 'distance_to_midpoint_km']].head()
 ```
 
 ```{python}
@@ -1262,29 +1248,45 @@ print(model.summary())
 residuals = model.resid
 fitted_values = model.fittedvalues
 
-# Residuals vs Fitted plot
+# ______________ Residuals vs Fitted plot
+'''
 plt.scatter(fitted_values, residuals)
 plt.axhline(0, color='black', linestyle='--')
 plt.title("Residuals vs Fitted Values")
 plt.xlabel("Fitted Values")
 plt.ylabel("Residuals")
 plt.show()
-
+'''
 # QQ plot
-sm.qqplot(residuals, line='45')
-plt.show()
+#sm.qqplot(residuals, line='45')
+#plt.show()
 
 
 # Breusch-Pagan test for heteroskedasticity
 _, p_value, _, _ = sms.het_breuschpagan(residuals, model.model.exog)
-print(f'Breusch-Pagan p-value: {p_value}')
+#print(f'Breusch-Pagan p-value: {p_value}')
 
 from statsmodels.stats.diagnostic import het_white
 
 # White test for heteroskedasticity
 _, p_value, _, _ = het_white(residuals, model.model.exog)
-print(f'White test p-value: {p_value}')
+#print(f'White test p-value: {p_value}')
 ```
+
+
+"The average rent in London is now £2,121 per month after +4.2% growth in the last year. The cheapest average rent is in Bexley (£1,520) and the highest average rent is in Kensington and Chelsea (£3,459), although rental increases are slowing in the most expensive parts of the city". (Zoopla, 2024) https://www.zoopla.co.uk/discover/property-news/average-rent-london/
+
+**Interpreting the regression model**
+
+Our analysis revealed that the rise in short-term rentals like Airbnb could play a key role in driving changes in rental prices. The data suggests that for every 1% increase in the number of Airbnb listings, the change in rental prices grew by 0.065%. In areas where Airbnb listings would have doubled (so an 100% increase), rents would have risen by an average of 6.5%. For tenants, this result in significant price increases: in central London, where average rents are around £2,121 per month, a 6.5% rise would add approximately £138 per month, or £1,656 per year. In high-end boroughs like Kensington and Chelsea, tenants would face rent hikes of nearly £2,700 per year. 
+
+Besides Airbnb, the model results also show that proximity to the city center also would influence rental prices, with neighborhoods closer to the centre seeing an additional 0.34% for every kilometer closer. However, vacancy rates showed little connection to rent changes. These findings highlight how the expansion of Airbnb is reshaping London’s rental market, putting additional pressure on long-term tenants already facing rising costs.
+
+However, the story doesn’t end with just the numbers. The analysis revealed that changes in rental prices are not evenly spread across the city. Although there were no signs of multicolinearity between the independent variables, meaning they didn’t overlap or interfere with each other. Tests on the errors (residuals) displayed uneven patterns in the data, and further spatial analysis confirmed significant clustering of rental price changes. Areas in central London stand out with clear High-High clusters, where rents are rising quickly and are surrounded by similarly high increases. In contrast, Low-Low clusters dominate the outer boroughs, where rent changes remain much smaller.
+
+A closer look at the spatial patterns on the Local Morans I cluster map also uncovered outliers – places where neighborhoods with rising rents sit next to areas where prices are barely changing. These findings highlight the uneven impact of Airbnb and other pressures on London’s rental market, particularly in central areas.
+
+To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionaly, a more robust regression model can be undertaken that accounts for the uneven spread of residuals. 
 
 ```{python}
 #checking the VIF
@@ -1305,6 +1307,8 @@ print(vif_data)
 #No signs of multicolinearity 
 ```
 
+**plotting the residuals**
+
 ```{python}
 # ____________ checking morans I for any spatial autocorellation ____
 from pysal.lib import weights
@@ -1312,7 +1316,7 @@ from pysal.lib import weights
 print(type(Regression_Final1))
 
 # needs to be a geopandas data frame 
-Rgdf = gpd.GeoDataFrame(Regression_Final1, geometry='geometry')
+Rgdf = gpd.GeoDataFrame(Regression_Final1, geometry='geometry') #Rgdf - residuals gdf
 print(type(Rgdf))
 # Adding residuals to the GeoDataFrame
 Rgdf['residuals'] = residuals
@@ -1331,10 +1335,29 @@ w.transform = 'R'
 mi = esda.Moran(Rgdf['residuals'], w)
 print(f"{mi.I:0.4f}")
 print(f"{mi.p_sim:0.4f}")
-moran_scatterplot(mi)
+
+#moran_scatterplot(mi)
+
+# ________ local Morans I on the residuals ___________
+
+lisa = esda.Moran_Local(Rgdf.residuals, w)
+# Break observations into significant or not
+Rgdf['sig'] = lisa.p_sim < 0.05
+# Store the quadrant they belong to
+Rgdf['quad'] = lisa.q
+Rgdf[['LAName','residuals','sig','quad']].sample(5, random_state=42)
+
+#print(Rgdf)
+
+plot_local_autocorrelation(lisa, Rgdf, 'residuals')
+
+
 ```
 
+
 ```{python}
+# ______________ A more robust model but can do echo = false because its just adding too much _______
+
 import statsmodels.api as sm
 
 
