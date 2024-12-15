@@ -27,6 +27,8 @@ share/python-wheels/
 MANIFEST
 #data/
 #data/raw/
+#notebooks/
+data/clean
 
 # Data files
 #*.zip
@@ -36,7 +38,7 @@ MANIFEST
 #*.geofeather
 #*.parquet
 #*.geoparquet
-listings.csv
+#listings.csv
 
 # PyInstaller
 #  Usually these files are written by a python script from a template
