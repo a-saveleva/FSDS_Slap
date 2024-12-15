@@ -73,6 +73,14 @@ from pyproj import Proj, Transformer #for the distance to midpoint
 from scipy.stats import shapiro
 import scipy.stats as stats
 import seaborn as sns
+import statsmodels.api as sm
+import statsmodels.stats.api as sms
+from statsmodels.stats.api import het_breuschpagan
+import esda
+from splot.esda import moran_scatterplot
+
+
+
 
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
@@ -118,7 +126,6 @@ def cache_data(src:str) -> str:
         
     return dfn
 ```
-
 
 Data on STL occupancy in London varies. Also, official occupancy cap does not sufficiently help describe "fair use" of Airbnb.
 We use the data provided by ONS: The number of guest nights, nights, and stays for short-term lets offered through online collaborative 
@@ -1208,8 +1215,6 @@ boro_gdf["distance_to_midpoint"] = boro_gdf["centroid"].apply(
 #print(boro_gdf[['GSS_CODE', 'distance_to_midpoint', 'geometry']])
 
 print(diff2024_2023_boro)
-
-
 ```
 
 ```{python}
@@ -1339,7 +1344,7 @@ plt.show()
 ```
 
 ```{python}
-#______________ merging the data for the regression model __________
+#______ ________ merging the data for the regression model __________
 
 
 
@@ -1348,7 +1353,8 @@ vacantprops_airbnb = pd.merge(For_regressionV[['mnemonic', 'LAName', 'VacantPerc
                                    diff2024_2023_boro[['GSS_CODE', 'total_airbnbs']], 
                                    left_on='mnemonic',  
                                    right_on='GSS_CODE',  
-                                   how='left')
+                                   how='left', suffixes=('', '_dup'))
+
 
 # Print the first few rows of the merged DataFrame
 #print(vacantprops_airbnb.head())
@@ -1375,19 +1381,159 @@ Regression_Final = pd.merge(
 #print(Regression_Final)
 
 
-# Display the DataFrame after dropping redundant columns
-#print(merged_boroughs_unique)
-
 # Removing duplicate columns if any
 Regression_Final = Regression_Final.loc[:, ~Regression_Final.columns.duplicated()]
 
 
-#print(Regression_Final)
+# Dropping the redundant 'mnemonic' column after merging
+Regression_Final1 = Regression_Final.drop(columns=['mnemonic'], errors='ignore')
 
-# Dropping the redundant ',mnemonic' column after merging
-Regresion_Final = Regression_Final.drop(columns=['mnemonic'], errors = 'ignore')
+# Print the final DataFrame
+print(Regression_Final1.head())
 
+#______ grouping the rows by borough ______
+
+
+Regression_Final = Regression_Final1.groupby('LAName').agg({
+    'VacantPercent': 'mean',        # Example: Mean of VacantPercent
+    'total_airbnbs': 'mean',         # Example: Sum of total_airbnbs
+    'Annual change': 'mean',        # Example: Mean of Annual change
+    'distance_to_midpoint': 'mean', # Example: Mean of distance_to_midpoint
+}).reset_index()
+
+# Print the grouped DataFrame
 print(Regression_Final)
+
+
+Regression_Final1.loc[:, 'distance_to_midpoint_km'] = Regression_Final1['distance_to_midpoint'] / 1000
+#the scale should not dominate others numerically which is why the distance to the centre is being calculated in km
+
+# Viewing the new column to ensure the operation worked
+Regression_Final1[['distance_to_midpoint', 'distance_to_midpoint_km']].head()
+```
+
+```{python}
+# __________________ Running the regression model ____________
+
+
+# Running the first regression model on the data
+X = Regression_Final1[['total_airbnbs','VacantPercent','distance_to_midpoint_km']]  
+y = Regression_Final1['Annual change']  
+
+
+# Fitting the model
+model = sm.OLS(y, sm.add_constant(X)).fit()
+
+# Displaying model summary
+print(model.summary())
+
+# Plot residuals after the transformation
+residuals = model.resid
+fitted_values = model.fittedvalues
+
+# Residuals vs Fitted plot
+plt.scatter(fitted_values, residuals)
+plt.axhline(0, color='black', linestyle='--')
+plt.title("Residuals vs Fitted Values")
+plt.xlabel("Fitted Values")
+plt.ylabel("Residuals")
+plt.show()
+
+# QQ plot
+sm.qqplot(residuals, line='45')
+plt.show()
+
+
+# Breusch-Pagan test for heteroskedasticity
+_, p_value, _, _ = sms.het_breuschpagan(residuals, model.model.exog)
+print(f'Breusch-Pagan p-value: {p_value}')
+
+from statsmodels.stats.diagnostic import het_white
+
+# White test for heteroskedasticity
+_, p_value, _, _ = het_white(residuals, model.model.exog)
+print(f'White test p-value: {p_value}')
+```
+
+```{python}
+#checking the VIF
+from statsmodels.stats.outliers_influence import variance_inflation_factor
+from statsmodels.tools.tools import add_constant
+
+# Add constant to the independent variables for VIF calculation
+X_with_const = add_constant(X)
+
+# Calculate VIF for each independent variable
+vif_data = pd.DataFrame()
+vif_data["Variable"] = X_with_const.columns
+vif_data["VIF"] = [variance_inflation_factor(X_with_const.values, i) for i in range(X_with_const.shape[1])]
+
+# Display VIF values
+print(vif_data)
+
+#No signs of multicolinearity 
+```
+
+```{python}
+# ____________ checking morans I for any spatial autocorellation ____
+print(type(Regression_Final1))
+
+# needs to be a geopandas data frame 
+Rgdf = gpd.GeoDataFrame(Regression_Final1, geometry='geometry')
+print(type(Rgdf))
+# Adding residuals to the GeoDataFrame
+Rgdf['residuals'] = residuals
+
+print(Rgdf.crs)
+
+# ___________ Morans I ____________
+
+# Generate spatial weights matrix
+w = Queen.from_dataframe(Rgdf)
+
+# Standardize weights matrix (required for Moran's I)
+w.transform = 'R'
+
+
+mi = esda.Moran(Rgdf['residuals'], w)
+print(f"{mi.I:0.4f}")
+print(f"{mi.p_sim:0.4f}")
+moran_scatterplot(mi)
+
+```
+
+```{python}
+import statsmodels.api as sm
+
+# Assuming 'X' is the independent variable(s) and 'y' is the dependent variable
+model = sm.OLS(y, X)  # Create the OLS model
+robust_results = model.fit(cov_type='HC0')  # Fit with heteroskedasticity-robust standard errors
+
+# Print the summary
+print(robust_results.summary())
+
+# __________ plotting the residuals vs fitted and qq plot to see if this worked __________________________
+# Residuals
+residuals = robust_results.resid
+
+# Fitted values (predicted values)
+fitted_values = robust_results.fittedvalues
+
+
+# QQ plot
+sm.qqplot(residuals, line='45', fit=True)
+plt.title('QQ Plot of Residuals (Robust Model)')
+plt.show()
+
+
+#residuals vs fitted values
+plt.scatter(fitted_values, residuals, alpha=0.7)
+plt.axhline(0, color='red', linestyle='--', linewidth=1)
+plt.xlabel('Fitted Values')
+plt.ylabel('Residuals')
+plt.title('Residuals vs Fitted Values (Robust Model)')
+plt.show()
+
 ```
 
 ## 1. Who collected the InsideAirbnb data?
@@ -1471,4 +1617,3 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
-
