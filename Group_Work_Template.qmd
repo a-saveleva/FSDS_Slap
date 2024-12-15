@@ -119,7 +119,6 @@ def cache_data(src:str) -> str:
     return dfn
 ```
 
-
 Data on STL occupancy in London varies. Also, official occupancy cap does not sufficiently help describe "fair use" of Airbnb.
 We use the data provided by ONS: The number of guest nights, nights, and stays for short-term lets offered through online collaborative 
 economy platforms (Airbnb, Booking.com and Expedia Group). https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/guestnightsnightsandstaysforshorttermletsuk
@@ -355,14 +354,19 @@ for df in airbnb_gdfs:
     df = (df[df['genuine'] == True]).copy()
     df = df[(df['availability_365']) > (5.84*12)] #Filtering by "commercial" - rented out more than average per month for London. Average is 5.84 days
 
-    print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long.\n")
+    print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long (multi-listing hosts only).\n")
+    print(f"Appending cleaned data frame to single-listing hosts data frame, and storing everything in list airbnb_gdf_clean.\n")
     
     airbnb_gdf_clean.append(df)
+    print("Done.")
 ```
 
 ```{python}
 #| echo: false
-airbnb_gdf_clean[0].head(1) #this prints 1st element of the list, so the older dataset
+airbnb_gdf_clean[0].head(3) #this prints 1st element of the list, so the older dataset
+#_____________________________________________________________________________________________________________________________
+# At this point, airbnb_gdf_clean is a list, which contains [0] - clean dataset of older airbnb data, and [1] - clean newer data
+#_____________________________________________________________________________________________________________________________
 ```
 
 ```{python}
@@ -397,7 +401,7 @@ def check_genuine(df, **kwargs):
     if (listing_check['beds'] > 4).any():
         print("Our estimate is that this might be a hostel, party home or similar hishly commercialised listing.")
     else:
-        print("Our estimate is that this cluster might be one entire home, and is a significant loss to housing and rental market.\n")
+        print("Our estimate is that this cluster might be one entire home.\n")
     
     print("All listings in this cluster are below. Click on the image to open the listings on website.")
     print("You might get inactive links with past datasets.")
@@ -671,6 +675,10 @@ df_CoreHousing['SalesPercent'] = ((df_CoreHousing['Sales_Volume']) / (df_CoreHou
 ```
 
 ```{python}
+#df_censusdwellings['Total_Dwellings'].sum()
+```
+
+```{python}
 #| echo: false
 #_____________________________________________________________________________________________________________________________
 # Creating core datasets to be used in analysis: Demographics data
@@ -767,8 +775,7 @@ def airbnb_count(gdf, boro_gdf):
 #_____________________________________________________________________________________________________________________________
 # Making the counts of airbnbs
 #_____________________________________________________________________________________________________________________________
-
-airbnb_2024_boro = airbnb_count(airbnb_gdf_clean[1], boro_gdf) #list of [boro_count_gdf, entire_ab_gdf, pr_ab_gdf]
+airbnb_2024_boro = airbnb_count(airbnb_gdf_clean[1], boro_gdf) #list of [boro_count_gdf - counts per borough, entire_ab_gdf - total counts, entire homes, pr_ab_gdf]
 airbnb_2023_boro = airbnb_count(airbnb_gdf_clean[0], boro_gdf)
 airbnb_2024_lsoa = airbnb_count(airbnb_gdf_clean[1], lsoa_gdf)
 airbnb_2023_lsoa = airbnb_count(airbnb_gdf_clean[0], lsoa_gdf)
@@ -802,38 +809,18 @@ ax.set_ylim(155000, 202000)
 #plt.savefig(os.path.join('img','borough_map_with_air_bnb_locations.png'), dpi=150)
 ```
 
-Due to the relatively low counts of "other" room types we can discount these from our analysis and focus on "Entire Home/apts" and "Private rooms"
-
 ```{python}
-# #| echo: false
-# def substract_gdfs(gdf_old, gdf_new, cols):
-#     """
-#     Function to find different in number of listings between 2 dates.
-#     Args:
-#     gdf_old: earlier airbnb dataset
-#     gdf_new: latest airbnb dataset
-#     cols: specify a subset of columns to be substracted
-#     """
-#     #Verify that the geometry matches
-#     if not gdf_old.geometry.equals(gdf_new.geometry):
-#         raise ValueError("The geometries of the two GeoDataFrames do not match!")
-    
-#     #Verify that the specified columns exist in both GeoDataFrames
-#     for col in cols:
-#         if col not in gdf_old.columns or col not in gdf_new.columns:
-#             raise ValueError(f"Column '{col}' does not exist in both GeoDataFrames.")
-    
-#     #Create a copy of the new gdf to store the differences
-#     gdf_diff = gdf_new.copy()
-    
-#     # Subtract the specified columns
-#     for col in cols:
-#         gdf_diff[col] = gdf_new[col] - gdf_old[col]
-    
-#     # Ensure the geometry column is preserved
-#     gdf_diff['geometry'] = gdf_new['geometry']
-    
-#     return gdf_diff
+#| echo: false
+print(f"We have identified {len(airbnb_gdf_clean[0])} valid listings in 2023, and {len(airbnb_gdf_clean[1])} valid listings in 2024.")
+print(f"It accounted for {len(airbnb_gdf_clean[0])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% and {len(airbnb_gdf_clean[1])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% of total dwellings respectively. \nThe number of dwellings is based on 2021 Census.\n")
+
+print(f"In 2023, there were:")
+print(airbnb_gdf_clean[0]['room_type'].value_counts())
+print(f"{len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] == 1])} hosts with one listing, and {len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1])} hosts with multiple listings.")
+print(f"\nIn 2024, there were:")
+print(airbnb_gdf_clean[1]['room_type'].value_counts())
+print(f"{len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] == 1])} hosts with one listing, and {len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1])} hosts with multiple listings.")
+print("\nDue to the relatively low counts of “other” room types we can discount these from our analysis and focus on “Entire Home/apts” and “Private rooms”.")
 ```
 
 ```{python}
@@ -869,41 +856,10 @@ def rel_prcnt_change_gdfs(gdf_old, gdf_new, cols):
 ```
 
 ```{python}
-# #| echo: false
-# cols_diff_airbnb = ['total_airbnbs', 'total_entireha', 'total_privateroom']
-# diff2024_2023_boro = substract_gdfs(airbnb_2023_boro[0], airbnb_2024_boro[0], cols_diff_airbnb)
-# diff2024_2023_lsoa = substract_gdfs(airbnb_2023_lsoa[0], airbnb_2024_lsoa[0], cols_diff_airbnb)
-```
-
-```{python}
 #| echo: false
 cols_diff_airbnb = ['total_airbnbs', 'total_entireha', 'total_privateroom']
 diff2024_2023_boro = rel_prcnt_change_gdfs(airbnb_2023_boro[0], airbnb_2024_boro[0], cols_diff_airbnb)
 diff2024_2023_lsoa = rel_prcnt_change_gdfs(airbnb_2023_lsoa[0], airbnb_2024_lsoa[0], cols_diff_airbnb)
-```
-
-```{python}
-# #| echo: false
-#_____________________________________________________________________________________________________________________________
-# I MADE A COLUMN WITH THE DIFFERENCE
-# LETS DISCUSS IF WE WANT TO USE VALUES NORMALISED BY AREA, OR BY DIFFERENCE BETWEEN 2 DATES
-#_____________________________________________________________________________________________________________________________
-# # normalise the counts by area
-# # create an area columns
-# boro_count_gdf['area'] = boro_count_gdf.geometry.area
-# lsoa_count_gdf['area'] = lsoa_count_gdf.geometry.area
-
-# # boroughs - Normalize the remaining count columns by dividing by the calculated area
-# boro_count_gdf['normalised_count_entireha'] = boro_count_gdf['total_entireha'] / boro_count_gdf['area']
-# boro_count_gdf['normalised_count_privateroom'] = boro_count_gdf['total_privateroom'] / boro_count_gdf['area']
-
-# # lsoa - Normalize the remaining count columns by dividing by the calculated area
-# lsoa_count_gdf['normalised_count_entireha'] = lsoa_count_gdf['total_entireha'] / lsoa_count_gdf['area']
-# lsoa_count_gdf['normalised_count_privateroom'] = lsoa_count_gdf['total_privateroom'] / lsoa_count_gdf['area']
-
-# # Display the updated GeoDataFrame to see the new column
-# print(boro_count_gdf[['total_entireha', 'total_privateroom', 'area', 'normalised_count_entireha', 'normalised_count_privateroom']].head())
-# print(lsoa_count_gdf[['total_entireha', 'total_privateroom', 'area', 'normalised_count_entireha', 'normalised_count_privateroom']].head())
 ```
 
 ```{python}
@@ -1208,8 +1164,6 @@ boro_gdf["distance_to_midpoint"] = boro_gdf["centroid"].apply(
 #print(boro_gdf[['GSS_CODE', 'distance_to_midpoint', 'geometry']])
 
 print(diff2024_2023_boro)
-
-
 ```
 
 ```{python}
@@ -1471,4 +1425,3 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
-
