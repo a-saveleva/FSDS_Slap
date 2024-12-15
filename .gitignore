@@ -28,6 +28,7 @@ MANIFEST
 #data/
 #data/raw/
 notebooks/
+data/clean
 
 # Data files
 #*.zip
