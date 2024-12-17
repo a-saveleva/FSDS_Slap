@@ -10,6 +10,7 @@ jupyter:
     display_name: Python (base)
     language: python
     name: base
+title: 1. Who collected the InsideAirbnb data?
 ---
 
 ```{python}
@@ -63,8 +64,6 @@ jupyter:
 ```
 
 
-## 1. Who collected the InsideAirbnb data?
-
 InsideAirbnb is a non-profit organisation founded and maintained by Murray Cox, a New York-based community activist, with contributions from John Morris, Taylor Higgins, and oversight from the Advisory Board (source).
 
 ## 2. Why did they collect the InsideAirbnb data?
@@ -91,6 +90,7 @@ To mitigate these issues, researchers must ensure transparency in their methods 
 ## 6. With reference to the InsideAirbnb data (*i.e.* using numbers, figures, maps, and descriptive statistics), what does an analysis of Hosts and Listing types suggest about the nature of Airbnb lets in London? 
 
 We cleaned the InsideAirbnb data by defining active listings as those with recent reviews, removing null price and bed data as errors, and flagging listings available more than the London average (source) as commercial. In 2023, 152,050 nights were booked across 111,880 STLs in London, averaging 5.84 nights per listing. We filtered out listings and hosts with “fair” platform use. Duplicates were detected using a tailored algorithm with 67-74% accuracy, validated via randomized sampling.
+
 
 ```{python}
 #| include: false
@@ -890,11 +890,11 @@ ax.set_ylim(155000, 202000)
 #plt.savefig(os.path.join('img','borough_map_with_air_bnb_locations.png'), dpi=150)
 ```
 
-# Growing number of listings
+### Growing number of listings
 We identified 28,207 active London listings in 2024 - 55.22% year-on-year increase. The listings accounted for 0.48% and 0.74% of total dwellings respectively (source, source); entire homes - 0.35% and 0.58% respectively, in contrast to other sources (source1). The central areas exhibit the highest proportion of Airbnb listings relative to total dwellings, and this share increased progressively across these and adjacent boroughs from 2023 to 2024.
-# Trend towards entire homes
+### Trend towards entire homes
 In 2024, the percentage of entire homes on Airbnb increased to 78%, up from 73% in 2023. The share of private rooms decreased from 26% to 21%, indicating a trend towards more entire homes, which have a greater impact on housing. Some sources suggest STL ease and higher revenue may incentivize removing properties from long-term rental markets (source, source), even if they start STL as a private room. We therefore see the need to expand the methodology to include private rooms into the research scope.
-# More multi-listing hosts
+### More multi-listing hosts
 The proportion of multi-listing hosts increased from 53% in 2023 to 57% in 2024, with 36% of these hosts having two listings. The average number of listings per multi-listing host rose from 14.8 to 19.5, and nearly 10% now manage more than 10 listings. Notably, there is growing prevalence of one-bedroom and 3+ bedroom listings, suggesting that multi-listing hosts are increasingly occupying larger homes and one-bedroom properties. This trend may limit access to family-sized housing and properties for first buyers. The high average number of listings likely reflects the involvement of asset management companies, pointing to a trend towards greater commercialisation of the platform.
 We compare our observations with the Airbnb-endorsed studies (source1, source2). As seen from our EDA, the commercial use of the platform is increasing, and the impact on housing could be underestimated. We discuss it further in the next section.
 
@@ -1255,19 +1255,19 @@ plt.show()
 
 ## 7. Drawing on your previous answers, and supporting your response with evidence (*e.g.* figures, maps, EDA/ESDA, and simple statistical analysis/models drawing on experience from, e.g., CASA0007), how *could* the InsideAirbnb data set be used to inform the regulation of Short-Term Lets (STL) in London? 
 
-# Potential link between STL and housing crisis in London
+### Potential link between STL and housing crisis in London
 Despite a narrowing rent-wage gap, rising living costs force low-income Londoners to spend up to 77% of wages on housing. Higher mortgage rates further exclude many from homeownership, disproportionately impacting vulnerable populations, leading to poverty, evictions, overcrowding, or homelessness (source, source, source, source, source, source, source, source). There are many claims that STLs exacerbate this housing crisis, pushing the demand down to the social and private rental sector.
 In February 2024, the UK government announced reforms requiring planning permission for STLs exceeding 90 nights, and a mandatory STL registration scheme (source) that will close the STL data availability gap, discussed in Q4. Additionally, the furnished holiday lettings tax regime will be abolished (source). These continuous efforts aim to keep homes available for local communities.
 Airbnb claims no link between listing growth and rising housing costs, backed by studies discussed in Q6. A caveat of published studies is their UK-wide statistics for some parameters, which may not reflect London’s heated STL market. With Airbnb comprising 47% of European platform STL supply and 30% across all types, STL impacts on housing may be more significant (source, source).
-# Our research
+### Our research
 We base our research on the independent studies conducted in 2019 and 2020 (source, source). Our goal is to identify proxies accounting for the impacts of the Airbnb listings on housing in London. We utilise the methodology outlined in the articles above.
-# Datasets:
+### Datasets:
 * InsideAirbnb - see Q6 for details.
 * London Boroughs' administrative boundaries provide a foundation for decision-makers to conduct further analysis.
 * LSOA 2021 represent smaller geographies. Issues include potential misrepresentation of demographics, exclusion of daytime populations, and being too granular for effective citywide visualisation.
 * Census 2021 provides the most accurate population data, but results may be skewed due to limited mobility and migration during the Covid-19 pandemic.
 
-# Results and interpretation:
+### Results and interpretation:
 
 
 MORE TEXT FROM SADIA?
@@ -1675,7 +1675,7 @@ print(vif_data)
 #No signs of multicolinearity 
 ```
 
-**plotting the residuals**
+**Plotting the residuals**
 
 The model suggests that for every 1% increase in the number of Airbnb listings, the change in rental prices grew by 0.065%. In areas where Airbnb listings would have doubled, featuring 100% increase, rents would have risen by an average of 6.5%. For tenants, this results in significant price increases: in central London, where average rents are around £2,121 per month, a 6.5% rise would add approximately £138 per month, or £1,656 per year. 
 
@@ -1773,7 +1773,7 @@ plt.show()
 
 To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionally, a more robust regression model can be undertaken that accounts for the uneven spread of residuals.
 
-# Potential expansion:
+### Potential expansion:
 * Social housing waiting times
 * No-fault evictions
 * Total new rough sleepers
@@ -1783,7 +1783,7 @@ To build on this analysis, future work could explore how neighborhoods influence
 * Property guardians
 * N of rooms in airbnb compared to n of homes on airbnb
 
-# Implications to the regulation of STL in London:
+### Implications to the regulation of STL in London:
 **Promote casual STLs**
 Following the EDA, enforcing the 90-day rule remains crucial. Multi-listing hosts with large portfolios should be closely monitored for compliance, as they may duplicate listings to bypass platform restrictions. A centralized STL registry, as proposed in February 2024, would enhance transparency, ensure compliance, enable local councils to monitor STL density and trends, and effectively distinguish between casual and professional hosts.
 
