@@ -43,30 +43,6 @@ jupyter:
     name: base
 ---
 
-## Declaration of Authorship {.unnumbered .unlisted}
-We, [Slap], pledge our honour that the work presented in this assessment is our own. Where information has been derived from other sources, we confirm that this has been indicated in the work. Where a Large Language Model such as ChatGPT has been used we confirm that we have made its contribution to the final submission clear.
-
-Date: 17.12.2024
-
-Student Numbers: 20017452, 24246337, 25000148, 24231390, 24242570.
-
-## Brief Group Reflection
-| What Went Well | What Was Challenging |
-| -------------- | -------------------- |
-| We identified the project scope early, and spent most of the time on interpretation, discussion and refinements to EDA   | Interpretation of residuals |
-| We are seeing some impact which we expected to see | Cleaning and deduplicating the InsideAirbnb dataset, and dealing with limitations |
-
-## Priorities for Feedback
-Are there any areas on which you would appreciate more detailed feedback if we're able to offer it?
-* Our approach to identifying valid airbnbs
-* Our approach to interpretation
-* Our suggestions for future STL regulation
-
-{{< pagebreak >}}
-
-# Response to Questions
-See the raw file for examples of how to hide computational output as there is code hidden here.
-
 ```{python}
 #| include: false
 import os
@@ -999,11 +975,16 @@ ax.set_ylim(155000, 202000)
 #plt.savefig(os.path.join('img','borough_map_with_air_bnb_locations.png'), dpi=150)
 ```
 
-### Growing number of listings
+### Growing number of listings:
+
 We identified 28,207 active London listings in 2024 - 55.22% year-on-year increase. The listings accounted for 0.48% and 0.74% of total dwellings respectively [@GovUK2012, @powerbiReport2024]; entire homes - 0.35% and 0.58% respectively, in contrast to other sources [@EY_Airbnb_2024]. The central areas exhibit the highest proportion of Airbnb listings relative to total dwellings, and this share increased progressively across these and adjacent boroughs from 2023 to 2024.
-### Trend towards entire homes
+
+### Trend towards entire homes:
+
 In 2024, the percentage of entire homes on Airbnb increased to 78%, up from 73% in 2023. The share of private rooms decreased from 26% to 21%, indicating a trend towards more entire homes, which have a greater impact on housing. Some sources suggest STL ease and higher revenue may incentivize removing properties from long-term rental markets [@cromarty2024, @evans2024], even if they start STL as a private room. We therefore see the need to expand the methodology to include private rooms into the research scope.
-### More multi-listing hosts
+
+### More multi-listing hosts:
+
 The proportion of multi-listing hosts increased from 53% in 2023 to 57% in 2024, with 36% of these hosts having two listings. The average number of listings per multi-listing host rose from 14.8 to 19.5, and nearly 10% now manage more than 10 listings. Notably, there is growing prevalence of one-bedroom and 3+ bedroom listings, suggesting that multi-listing hosts are increasingly occupying larger homes and one-bedroom properties. This trend may limit access to family-sized housing and properties for first buyers. The high average number of listings likely reflects the involvement of asset management companies, pointing to a trend towards greater commercialisation of the platform.
 We compare our observations with the Airbnb-endorsed studies [@EY_Airbnb_2024, @scanlon2024]. As seen from our EDA, the commercial use of the platform is increasing, and the impact on housing could be underestimated. We discuss it further in the next section.
 
@@ -1371,13 +1352,18 @@ plt.show()
 
 ## 7. Drawing on your previous answers, and supporting your response with evidence (*e.g.* figures, maps, EDA/ESDA, and simple statistical analysis/models drawing on experience from, e.g., CASA0007), how *could* the InsideAirbnb data set be used to inform the regulation of Short-Term Lets (STL) in London? 
 
-### Potential link between STL and housing crisis in London
+### Potential link between STL and housing crisis in London:
+
 Despite a narrowing rent-wage gap, rising living costs force low-income Londoners to spend up to 77% of wages on housing. Higher mortgage rates further exclude many from homeownership, disproportionately impacting vulnerable populations, leading to poverty, evictions, overcrowding, or homelessness [@EY_Airbnb_2024, @scanlon2024, @finnerty2024, @otte2024, @builtassetmanagement2024, @londonassembly2024, @ageuk2024, @kellyk2024, @crisis2024, @bevan2023]. There are many claims that STLs exacerbate this housing crisis, pushing the demand down to the social and private rental sector.
 In February 2024, the UK government announced reforms requiring planning permission for STLs exceeding 90 nights, and a mandatory STL registration scheme [@govuk2024] that will close the STL data availability gap, discussed in Q4. Additionally, the furnished holiday lettings tax regime will be abolished [@govuk_abolition2024]. These continuous efforts aim to keep homes available for local communities.
 Airbnb claims no link between listing growth and rising housing costs, backed by studies discussed in Q6. A caveat of published studies is their UK-wide statistics for some parameters, which may not reflect London’s heated STL market. With Airbnb comprising 47% of European platform STL supply and 30% across all types, STL impacts on housing may be more significant [@lighthouse2021, @laymyhat].
-### Our research
+
+### Our research:
+
 We base our research on the independent studies conducted in 2019 and 2020 [@Shabrina2021, @Todd2021]. Our goal is to identify proxies accounting for the impacts of the Airbnb listings on housing in London. We utilise the methodology outlined in the articles above.
+
 ### Datasets:
+
 * InsideAirbnb - see Q6 for details.
 * London Boroughs' administrative boundaries provide a foundation for decision-makers to conduct further analysis.
 * LSOA 2021 represent smaller geographies. Issues include potential misrepresentation of demographics, exclusion of daytime populations, and being too granular for effective citywide visualisation.
