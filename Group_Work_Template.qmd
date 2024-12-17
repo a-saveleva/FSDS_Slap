@@ -3,15 +3,14 @@ bibliography: bio.bib
 csl: harvard-cite-them-right.csl
 title: Slap Group Project
 execute:
-  echo: false
-  freeze: true
+  kernel: python3
 format:
   html:
     code-copy: true
     code-link: true
     toc: true
     toc-title: On this page
-    toc-depth: 2
+    toc-depth: 3
     toc_float:
       collapsed: false
       smooth_scroll: true
@@ -45,34 +44,6 @@ jupyter:
     language: python
     name: base
 ---
-
-## Declaration of Authorship {.unnumbered .unlisted}
-
-We, [Slap], pledge our honour that the work presented in this assessment is our own. Where information has been derived from other sources, we confirm that this has been indicated in the work. Where a Large Language Model such as ChatGPT has been used we confirm that we have made its contribution to the final submission clear.
-
-Date: 17.12.2024
-
-Student Numbers: 20017452, 24246337, 25000148, 24231390, 24242570.
-
-## Brief Group Reflection
-
-| What Went Well | What Was Challenging |
-| -------------- | -------------------- |
-| A We identified the project scope early, and spent most of the time on interpretation, discussion and refinements to EDA   | B Interpretation of residuals |
-| C  We are seeing some impact which we expected to see | D     Cleaning and deduplicating the InsideAirbnb dataset |
-
-## Priorities for Feedback
-
-Are there any areas on which you would appreciate more detailed feedback if we're able to offer it?
-* Our approach to identifying valid airbnbs
-* Our approach to interpretation
-* Our suggestions for future STL regulation
-
-{{< pagebreak >}}
-
-# Response to Questions
-
-See the raw file for examples of how to hide computational output as there is code hidden here.
 
 ```{python}
 #| include: false
@@ -1257,8 +1228,7 @@ We base our research on the independent studies conducted in 2019 and 2020 [@Sha
 
 ### Results and interpretation:
 
-
-MORE TEXT FROM SADIA?
+The model explains about 53% of the variation in rental prices (R²), offering a solid understanding of the main factors influencing rent changes.
 
 ```{python}
 #| include: false
@@ -1759,7 +1729,7 @@ plt.show()
 
 To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionally, a more robust regression model can be undertaken that accounts for the uneven spread of residuals.
 
-###Potential analysis expansion:
+### Potential analysis expansion:
 Below are the potential additional variables that could be tested in the future in multiple linear regression:
 * Social housing waiting times;
 * No-fault evictions;
