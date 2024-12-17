@@ -46,34 +46,6 @@ jupyter:
     name: base
 ---
 
-## Declaration of Authorship {.unnumbered .unlisted}
-
-We, [Slap], pledge our honour that the work presented in this assessment is our own. Where information has been derived from other sources, we confirm that this has been indicated in the work. Where a Large Language Model such as ChatGPT has been used we confirm that we have made its contribution to the final submission clear.
-
-Date: 17.12.2024
-
-Student Numbers: 20017452, 24246337, 25000148, 24231390, 24242570.
-
-## Brief Group Reflection
-
-| What Went Well | What Was Challenging |
-| -------------- | -------------------- |
-| A We identified the project scope early, and spent most of the time on interpretation, discussion and refinements to EDA   | B Interpretation of residuals |
-| C  We are seeing some impact which we expected to see | D     Cleaning and deduplicating the InsideAirbnb dataset |
-
-## Priorities for Feedback
-
-Are there any areas on which you would appreciate more detailed feedback if we're able to offer it?
-* Our approach to identifying valid airbnbs
-* Our approach to interpretation
-* Our suggestions for future STL regulation
-
-{{< pagebreak >}}
-
-# Response to Questions
-
-See the raw file for examples of how to hide computational output as there is code hidden here.
-
 ```{python}
 #| include: false
 import os
@@ -1852,36 +1824,41 @@ plot_local_autocorrelation(lisa, Rgdf, 'residuals')
 ```{python}
 # #| echo: false
 
-# Set normalization for residuals
+# Set the limits for the color scale using raw residual values
 vmin = Rgdf['residuals'].min()
 vmax = Rgdf['residuals'].max()
-norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
 
-# Plot the residuals with axes and consistent colorbar
-fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+# Create the figure and axis
+fig, ax = plt.subplots(figsize=(10, 8))
 
-# Choropleth map
+# Plot the residuals map without normalization
 Rgdf.plot(
     column='residuals',
-    cmap='coolwarm',
-    norm=norm,
-    edgecolor="black",
-    linewidth=0.5,
-    legend=True,
-    legend_kwds={'label': "Residual Value", 'orientation': "horizontal"},
-    ax=ax
+    cmap='magma_r',  # Matching the color scheme
+    edgecolor='white',
+    linewidth=0.8,
+    vmin=vmin,       # Use raw minimum
+    vmax=vmax,       # Use raw maximum
+    ax=ax,
+    legend=False     # Turn off default legend
 )
 
-# Add axes labels
-ax.set_title("Spatial Distribution of Residuals", fontsize=12, fontweight="bold")
-ax.set_xlabel("Longitude", fontsize=10)
-ax.set_ylabel("Latitude", fontsize=10)
+# Add custom colorbar
+sm = plt.cm.ScalarMappable(cmap='magma_r', norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax))
+sm._A = []  # Dummy array for colorbar
+cbar = fig.colorbar(sm, ax=ax, orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+cbar.set_label("Residual Value", fontsize=12)
+cbar.outline.set_visible(False)  # Remove the colorbar border
 
-# Force proper axis limits for clean layout
-ax.set_xlim(Rgdf.total_bounds[0], Rgdf.total_bounds[2])
-ax.set_ylim(Rgdf.total_bounds[1], Rgdf.total_bounds[3])
+# Set title and formatting
+ax.set_title("Spatial Distribution of Residuals", fontsize=14, loc='left')
+ax.set_axis_off()  # Hide axes for cleaner layout
 
-# Adjust layout
+# Adjust axis limits
+ax.set_xlim([501000, 563000])
+ax.set_ylim([155000, 202000])
+
+# Adjust layout for a clean look
 plt.tight_layout()
 plt.show()
 ```
