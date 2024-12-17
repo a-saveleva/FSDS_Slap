@@ -137,7 +137,7 @@ airbnbcols = ['id', 'listing_url', 'picture_url', 'host_id', 'host_listings_coun
               'host_total_listings_count', 'property_type', 'room_type', 'price', 
               'minimum_nights', 'maximum_nights', 'availability_365', 
               'number_of_reviews', 'latitude', 'longitude', 'last_review', 
-              'beds', 'bedrooms']
+              'beds', 'bedrooms', 'host_location']
 airbnbdfs = []
 for date in airbnbdates:
     airbnburl  = f"https://data.insideairbnb.com/united-kingdom/england/london/{date}/data/listings.csv.gz"
@@ -337,7 +337,8 @@ for df in airbnb_gdfs:
     print(f"Data frame after cleaning invalid N of beds is {df.shape[0]:,} listings long.")
     
     # creating columns necessary for the analysis and filling with default values
-    df['prvt_rms_in_cluster'] = df['beds'] #be are using beds for rooms, but for now just copy the column
+    df['prvt_rms_in_cluster'] = df['beds']* 0.8 #be are using beds for rooms, but for now just copy the column
+    # airbnb_gdfs[1]["bedrooms"].mean()/airbnb_gdfs[1]["beds"].mean() = 0.8
     df['entr_hms_in_cluster'] = 0 #default will be 0
     df['cluster_id'] = None #will write ids here
     #df['true_nrooms'] = df['beds'] #estimation of true n of rooms proved inconclusive with the methods used. The parts related to rooms are commented out.
@@ -349,6 +350,15 @@ for df in airbnb_gdfs:
     
     df = (df[df['genuine'] == True]).copy()
     df = df[(df['availability_365']) > (5.84*12)] #Filtering by "commercial" - rented out more than average per month for London. Average is 5.84 days
+#_____________________________________________________________________________________________________________________________
+#https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/guestnightsnightsandstaysforshorttermletsuk
+#https://www.ons.gov.uk/peoplepopulationandcommunity/housing/datasets/hostslistingsandbedspacesofshorttermletsuk2023
+#According to this data, in December 2023 (month where there is overlap between 2 datasets), there were 152,050 nights spent in all 111,880 observed STLs in London, 
+#5.84 nights per listing. We take this as a benchmark for "fair" use of Airbnb in London. Hosts that are available for longer than 5.84*12 days will be considereded 
+#as those taking advantage of the opportunity, which also means there is a possibility that they don't live in the flat - we will chech this later.
+# due to limitations, we can't see the actual occupancy per listing, and have to treat the availability as occupancy. 
+# assuming that if the host was non-commercial, they would block out more days when they are living in the flat, and the availability will be lower.
+#_____________________________________________________________________________________________________________________________
 
     print(f"Data frame after cleaning duplicate listings is {df.shape[0]:,} listings long (multi-listing hosts only).\n")
     print(f"Appending cleaned data frame to single-listing hosts data frame, and storing everything in list airbnb_gdf_clean.")
@@ -457,7 +467,7 @@ def check_genuine(df, **kwargs):
 #| echo: false
 check_genuine(airbnb_gdf_all[1]) #you can also define random state, e.g. check_genuine(airbnb_gdf_all[1],random_state=10)
 #_____________________________________________________________________________________________________________________________
-# Anna - this needs validation. Run this say 25 times and put how many results were correctly marked as dups
+# The algorithm shows 67-74% accuracy, validated with randomised sampling of 25 clusters. See validation sheet in "notebooks", "Cluster validation sheet".
 #_____________________________________________________________________________________________________________________________
 ```
 
@@ -721,6 +731,7 @@ lsoa_gdf = gpd.read_file(lsoa_shp).to_crs('EPSG:27700')[['lsoa21cd', 'lsoa21nm',
 ```
 
 ```{python}
+#| echo: false
 airbnb_gdf_clean[1].columns
 #len(airbnb_gdf_clean[1])
 ```
@@ -771,7 +782,7 @@ def airbnb_count(gdf, boro_gdf):
 #_____________________________________________________________________________________________________________________________
 # Making the counts of airbnbs
 #_____________________________________________________________________________________________________________________________
-airbnb_2024_boro = airbnb_count(airbnb_gdf_clean[1], boro_gdf) #list of [boro_count_gdf - counts per borough, entire_ab_gdf - total counts, entire homes, pr_ab_gdf]
+airbnb_2024_boro = airbnb_count(airbnb_gdf_clean[1], boro_gdf) #list of [boro_count_gdf, entire_ab_gdf, pr_ab_gdf]
 airbnb_2023_boro = airbnb_count(airbnb_gdf_clean[0], boro_gdf)
 airbnb_2024_lsoa = airbnb_count(airbnb_gdf_clean[1], lsoa_gdf)
 airbnb_2023_lsoa = airbnb_count(airbnb_gdf_clean[0], lsoa_gdf)
@@ -807,17 +818,95 @@ ax.set_ylim(155000, 202000)
 
 ```{python}
 #| echo: false
-print(f"We have identified {len(airbnb_gdf_clean[0])} valid listings in 2023, and {len(airbnb_gdf_clean[1])} valid listings in 2024.")
-print(f"It accounted for {len(airbnb_gdf_clean[0])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% and {len(airbnb_gdf_clean[1])/(df_censusdwellings['Total_Dwellings'].sum()/100):.2f}% of total dwellings respectively. \nThe number of dwellings is based on 2021 Census.\n")
-print(f"This does not consider 2024 completions.")
+dwelling_count_2023 = 3790210
+#https://assets.publishing.service.gov.uk/media/664da7e6993111924d9d395c/LT_100.ods
+dwelling_count_2024 = dwelling_count_2023 + 32162
+#net additional dwellings in 2023-2024. https://app.powerbi.com/view?r=eyJrIjoiZTE5YWQ3MDYtZmFjMC00N2YwLWIxM2EtYWY2NTk1NjExYjgwIiwidCI6ImJmMzQ2ODEwLTljN2QtNDNkZS1hODcyLTI0YTJlZjM5OTVhOCJ9
+
+print(f"We have identified {len(airbnb_gdf_clean[0])} valid listings in 2023, and "
+      f"{len(airbnb_gdf_clean[1])} valid listings in 2024, with "
+      f"{((len(airbnb_gdf_clean[1]) - len(airbnb_gdf_clean[0])) / len(airbnb_gdf_clean[0])) * 100:.2f}% year-on-year increase.")
+
+print(f"The listings accounted for {len(airbnb_gdf_clean[0])/(dwelling_count_2023/100):.2f}% and {len(airbnb_gdf_clean[1])/(dwelling_count_2024/100):.2f}% of total dwellings respectively (Number for London).")
+print(f"Entire homes took up {len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['room_type'] == 'Entire home/apt']) / (dwelling_count_2023) * 100:.2f}% in 2023 and "
+      f"{len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['room_type'] == 'Entire home/apt']) / (dwelling_count_2024) * 100:.2f}% in 2024.\n")
 
 print(f"In 2023, there were:")
 print(airbnb_gdf_clean[0]['room_type'].value_counts())
 print(f"{len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] == 1])} hosts with one listing, and {len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1])} hosts with multiple listings.")
+print(f"{(len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] == 1]) / len(airbnb_gdf_clean[0])) * 100:.2f}% of hosts with one listing, and {(len(airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1]) / len(airbnb_gdf_clean[0])) * 100:.2f}% of hosts with multiple listings.")
+
 print(f"\nIn 2024, there were:")
 print(airbnb_gdf_clean[1]['room_type'].value_counts())
 print(f"{len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] == 1])} hosts with one listing, and {len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1])} hosts with multiple listings.")
+print(f"{(len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] == 1]) / len(airbnb_gdf_clean[1])) * 100:.2f}% of hosts with one listing, and {(len(airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1]) / len(airbnb_gdf_clean[1])) * 100:.2f}% of hosts with multiple listings.")
 print("\nDue to the relatively low counts of “other” room types we can discount these from our analysis and focus on “Entire Home/apts” and “Private rooms”.")
+```
+
+```{python}
+#| echo: false
+airbnb_gdf_clean[0]['prvt_rms_in_cluster'] = pd.to_numeric(airbnb_gdf_clean[0]['prvt_rms_in_cluster'], errors='coerce')
+airbnb_gdf_clean[1]['prvt_rms_in_cluster'] = pd.to_numeric(airbnb_gdf_clean[1]['prvt_rms_in_cluster'], errors='coerce')
+plt.figure(figsize=(10, 6))
+
+# Plot the histogram for airbnb_gdf_clean[0] (2023 Listings)
+plt.hist(
+    airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1]["prvt_rms_in_cluster"].dropna(), 
+    bins=range(1, int(airbnb_gdf_clean[0]['prvt_rms_in_cluster'].max()) + 2),  # Ensure bins are integer
+    alpha=0.5, label='2023 Listings', color='blue', density=True
+)
+
+# Plot the histogram for airbnb_gdf_clean[1] (2024 Listings)
+plt.hist(
+    airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1]["prvt_rms_in_cluster"].dropna(),
+    bins=range(1, int(airbnb_gdf_clean[1]['prvt_rms_in_cluster'].max()) + 2),  # Ensure bins are integer
+    alpha=0.5, label='2024 Listings', color='red', density=True
+)
+plt.xlabel('Number of Bedrooms')
+plt.ylabel('Share of Listings, %')
+plt.title('N of Bedrooms in Listings from Multi-Listing Hosts')
+
+plt.xticks(range(1, max(int(airbnb_gdf_clean[0]['prvt_rms_in_cluster'].max()), int(airbnb_gdf_clean[1]['beds'].max())) + 1))
+plt.legend()
+plt.show()
+
+print("We can see that the listings from multi-listing hosts have more rooms in 2021.")
+```
+
+```{python}
+#| echo: false
+multi_listing_hosts_2023 = airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1]
+multi_listing_hosts_2024 = airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1]
+
+upper_limit = 10
+bins_ml_hosts = list(range(2, upper_limit + 1)) + [upper_limit + 1]
+
+plt.figure(figsize=(10, 6))
+
+plt.hist(
+    multi_listing_hosts_2023['new_host_listings_count'], bins=bins_ml_hosts,
+    alpha=0.5, label='2023 Listings', color='blue', density=True)
+
+plt.hist(
+    multi_listing_hosts_2024['new_host_listings_count'], bins=bins_ml_hosts,
+    alpha=0.5, label='2024 Listings', color='red', density=True)
+
+plt.xlabel('Number of Listings per Multi-Listing Host')
+plt.ylabel('Share of Multi-Listing Hosts')
+plt.title('N of Listings posted by Multi-Listing Hosts')
+
+plt.xticks(list(range(1, upper_limit + 1)) + [upper_limit + 1])
+plt.legend()
+plt.show()
+#___________________________________________________________________________________________________________________________________
+# the last bin shows all numbers over 10
+#___________________________________________________________________________________________________________________________________
+
+
+# Print the results
+print(f"Average number of listings per multi-listing host in 2023: {multi_listing_hosts_2023['new_host_listings_count'].mean():.2f}")
+print(f"Average number of listings per multi-listing host in 2024: {multi_listing_hosts_2024['new_host_listings_count'].mean():.2f}")
+print("23% of multi-listing hosts have only 2 listings in 2024. However, the rest have more, and the N of listings per multi-listing host increased from 14.8 to 19.5.")
 ```
 
 ```{python}
@@ -866,11 +955,6 @@ diff2024_2023_boro.head(2)
 
 ```{python}
 #| echo: false
-diff2024_2023_boro.head(2)
-```
-
-```{python}
-#| echo: false
 diff2024_2023_boro["total_airbnbs"].hist()
 ```
 
@@ -878,100 +962,194 @@ diff2024_2023_boro["total_airbnbs"].hist()
 
 ```{python}
 #| echo: false
-# Determine the min and max values across both columns
-vmin = min(diff2024_2023_boro['total_entireha'].min(), diff2024_2023_boro['total_privateroom'].min())
-vmax = max(diff2024_2023_boro['total_entireha'].max(), diff2024_2023_boro['total_privateroom'].max())
+diff2024_2023_boro1 = pd.merge(
+    diff2024_2023_boro,  # Left DataFrame
+    df_CoreDemographics[['mnemonic', 'Total_Dwellings']],  # Right DataFrame with relevant columns
+    left_on='GSS_CODE',  # Column in diff2024_2023_boro
+    right_on='mnemonic',  # Column in df_CoreDemographics
+    how='left'  # Perform left join to keep all rows from diff2024_2023_boro
+)
+diff2024_2023_boro1["percent_of_totaldw_2023"] = airbnb_2023_boro[0]['total_airbnbs']/ (diff2024_2023_boro1['Total_Dwellings']/100)
+diff2024_2023_boro1["percent_of_totaldw_2024"] = airbnb_2024_boro[0]['total_airbnbs']/ (diff2024_2023_boro1['Total_Dwellings']/100)
 
-# Create a TwoSlopeNorm instance
-norm = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
+# Set the plot's limits for the color scale
+vmin = 0
+vmax = 2
 
-# Create the subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 8))
+# Create the figure with two subplots (side-by-side)
+fig, axes = plt.subplots(1, 2, figsize=(18, 8))
 
-# Plot 'total_entireha' with shared color scale and custom normalization
-diff2024_2023_boro.plot(column='total_airbnbs', ax=axes[0], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='black',
-                        norm=norm)  # Apply custom normalization
+# Plot the first map for percent_of_totaldw_2023
+map_plot_2023 = diff2024_2023_boro1.plot(column='percent_of_totaldw_2023', ax=axes[0], legend=False,
+                                          cmap='magma_r', edgecolor='white', linewidth=0.8,
+                                          vmin=vmin, vmax=vmax)
 
-# Add title and labels
-axes[0].set_title("Relative Percentage Difference in count of the AirBnb locations available (total count) by Borough, 2024-2023", fontsize=8)
-axes[0].set_xlabel("Longitude")
-axes[0].set_ylabel("Latitude")
+# Create the colorbar for the first plot (2023)
+sm_2023 = plt.cm.ScalarMappable(cmap='magma_r', norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax))
+sm_2023._A = []  # Empty array to create the colorbar
+cbar_2023 = fig.colorbar(sm_2023, ax=axes[0], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+cbar_2023.set_label("Percent of Total Dwellings (%)")
+cbar_2023.outline.set_visible(False)  # Remove border from the colorbar
 
-# Plot 'total_privateroom' with shared color scale and custom normalization
-diff2024_2023_boro.plot(column='total_entireha', ax=axes[1], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='black',
-                        norm=norm)  # Apply custom normalization
+# Add labels (percent values) to the first map (2023)
+for idx, row in diff2024_2023_boro1.iterrows():
+    x, y = row.geometry.centroid.coords[0]
+    axes[0].annotate(f"{row['percent_of_totaldw_2023']:.2f}%", xy=(x, y), xytext=(3, 3), textcoords="offset points",
+                     ha='center', fontsize=8, color='white', fontweight='bold')
 
-# Add title and labels
-axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"entire home\" rentals by Borough, 2024-2023", fontsize=8)
-axes[1].set_xlabel("Longitude")
-axes[1].set_ylabel("Latitude")
+# Set title for the first map
+axes[0].set_title("Share of Homes Involved in Airbnb\nin the Total Number of Dwellings (2023)", fontsize=14, loc='left')
 
-# # Plot 'total_privateroom' with shared color scale and custom normalization
-# diff2024_2023_boro.plot(column='total_privateroom', ax=axes[1], legend=True,
-#                         legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-#                                      'orientation': "horizontal"},
-#                         cmap='coolwarm', edgecolor='black',
-#                         norm=norm)  # Apply custom normalization
+# Plot the second map for percent_of_totaldw_2024
+map_plot_2024 = diff2024_2023_boro1.plot(column='percent_of_totaldw_2024', ax=axes[1], legend=False,
+                                          cmap='magma_r', edgecolor='white', linewidth=0.8,
+                                          vmin=vmin, vmax=vmax)
 
-# # Add title and labels
-# axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by Borough, 2024-2023", fontsize=8)
-# axes[1].set_xlabel("Longitude")
-# axes[1].set_ylabel("Latitude")
+# Create the colorbar for the second plot (2024)
+sm_2024 = plt.cm.ScalarMappable(cmap='magma_r', norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax))
+sm_2024._A = []  # Empty array to create the colorbar
+cbar_2024 = fig.colorbar(sm_2024, ax=axes[1], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+cbar_2024.set_label("Percent of Total Dwellings (%)")
+cbar_2024.outline.set_visible(False)  # Remove border from the colorbar
 
-# Adjust layout for better spacing
+# Add labels (percent values) to the second map (2024)
+for idx, row in diff2024_2023_boro1.iterrows():
+    x, y = row.geometry.centroid.coords[0]
+    axes[1].annotate(f"{row['percent_of_totaldw_2024']:.2f}%", xy=(x, y), xytext=(3, 3), textcoords="offset points",
+                     ha='center', fontsize=8, color='white', fontweight='bold')
+
+# Set title for the second map
+axes[1].set_title("Share of Homes Involved in Airbnb\nin the Total Number of Dwellings (2024)", fontsize=14, loc='left')
+
+# Set axis limits and turn off axis
+for ax in axes:
+    ax.set_xlim([501000, 563000])
+    ax.set_ylim([155000, 202000])
+    ax.set_axis_off()
+
+# Show the plot
 plt.tight_layout()
 plt.show()
-
-print(f"The number of entire homes per borough grew more, than the overall number of listings.")
 ```
 
 ```{python}
 #| echo: false
-# Determine the min and max values across both columns
-vmin = min(diff2024_2023_lsoa['total_entireha'].min(), diff2024_2023_lsoa['total_privateroom'].min())
-vmax = max(diff2024_2023_lsoa['total_entireha'].max(), diff2024_2023_lsoa['total_privateroom'].max())
+from matplotlib.colors import TwoSlopeNorm
 
-# Create a TwoSlopeNorm instance
-norm = TwoSlopeNorm(vmin=-65, vcenter=0, vmax=65)
+# Ensure the columns exist and calculate vmin and vmax for both datasets
+vmin_boro = min(diff2024_2023_boro['total_entireha'].min(), 
+                diff2024_2023_boro['total_privateroom'].min(), 
+                diff2024_2023_boro['total_airbnbs'].min())
+vmax_boro = max(diff2024_2023_boro['total_entireha'].max(), 
+                diff2024_2023_boro['total_privateroom'].max(), 
+                diff2024_2023_boro['total_airbnbs'].max())
 
-# Create the subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 8))
+vmin_lsoa = min(diff2024_2023_lsoa['total_entireha'].min(), 
+                diff2024_2023_lsoa['total_privateroom'].min(), 
+                diff2024_2023_lsoa['total_airbnbs'].min())
+vmax_lsoa = max(diff2024_2023_lsoa['total_entireha'].max(), 
+                diff2024_2023_lsoa['total_privateroom'].max(), 
+                diff2024_2023_lsoa['total_airbnbs'].max())
 
-# Plot 'total_entireha' with shared color scale and custom normalization
-diff2024_2023_lsoa.plot(column='total_entireha', ax=axes[0], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='white', linewidth=0.1,
-                        norm=norm)  # Apply custom normalization
+# Create TwoSlopeNorm instances for custom normalization
+norm_boro = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
+norm_lsoa = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
 
-# Add title and labels
-axes[0].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"Entire home/apt\" rentals by LSOA, 2024-2023", fontsize=8)
-axes[0].set_xlabel("Longitude")
-axes[0].set_ylabel("Latitude")
+# Create the subplots (6 maps: 3 in a row)
+fig, axes = plt.subplots(2, 3, figsize=(18, 12))
 
-# Plot 'total_privateroom' with shared color scale and custom normalization
-diff2024_2023_lsoa.plot(column='total_privateroom', ax=axes[1], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='white', linewidth=0.1,
-                        norm=norm)  # Apply custom normalization
+# Plot 'total_airbnbs' for Boroughs with custom normalization
+map1 = diff2024_2023_boro.plot(column='total_airbnbs', ax=axes[0, 0], legend=False,
+                                cmap='coolwarm', edgecolor='white', norm=norm_boro)
+axes[0, 0].set_axis_off()
+axes[0, 0].set_title("Relative % Difference\nin Total Airbnb Listings\nby Borough (2024-2023)", fontsize=12, loc='left')
+cbar1 = fig.colorbar(map1.get_children()[0], ax=axes[0, 0], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar1.set_label("Relative % Difference", fontsize=10)
+cbar1.outline.set_visible(False)
 
-# Add title and labels
-axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by LSOA, 2024-2023", fontsize=8)
-axes[1].set_xlabel("Longitude")
-axes[1].set_ylabel("Latitude")
+# Plot 'total_entireha' for Boroughs with custom normalization
+map2 = diff2024_2023_boro.plot(column='total_entireha', ax=axes[0, 1], legend=False, cmap='coolwarm', edgecolor='white', norm=norm_boro)
+axes[0, 1].set_axis_off()
+axes[0, 1].set_title("Relative % Difference\nin Entire Home Listings\nby Borough (2024-2023)", fontsize=12, loc='left')
+cbar2 = fig.colorbar(map2.get_children()[0], ax=axes[0, 1], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar2.set_label("Relative % Difference", fontsize=10)
+cbar2.outline.set_visible(False)
 
-# Adjust layout for better spacing
+# Plot 'total_privateroom' for Boroughs with custom normalization
+map3 = diff2024_2023_boro.plot(column='total_privateroom', ax=axes[0, 2], legend=False, cmap='coolwarm', edgecolor='white', norm=norm_boro)
+axes[0, 2].set_axis_off()
+axes[0, 2].set_title("Relative % Difference\nin Private Room Listings\nby Borough (2024-2023)", fontsize=12, loc='left')
+cbar3 = fig.colorbar(map3.get_children()[0], ax=axes[0, 2], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar3.set_label("Relative % Difference", fontsize=10)
+cbar3.outline.set_visible(False)
+
+# Plot 'total_airbnbs' for LSOAs with custom normalization
+map4 = diff2024_2023_lsoa.plot(column='total_airbnbs', ax=axes[1, 0], legend=False, cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa)
+axes[1, 0].set_axis_off()
+axes[1, 0].set_title("Relative % Difference\nin Total Airbnb Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
+cbar4 = fig.colorbar(map4.get_children()[0], ax=axes[1, 0], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar4.set_label("Relative % Difference", fontsize=10)
+cbar4.outline.set_visible(False)
+
+# Plot 'total_entireha' for LSOAs with custom normalization
+map5 = diff2024_2023_lsoa.plot(column='total_entireha', ax=axes[1, 1], legend=False,cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa)
+axes[1, 1].set_axis_off()
+axes[1, 1].set_title("Relative % Difference\nin Entire Home Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
+cbar5 = fig.colorbar(map5.get_children()[0], ax=axes[1, 1], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar5.set_label("Relative % Difference", fontsize=10)
+cbar5.outline.set_visible(False)
+
+# Plot 'total_privateroom' for LSOAs with custom normalization
+map6 = diff2024_2023_lsoa.plot(column='total_privateroom', ax=axes[1, 2], legend=False,cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa)
+axes[1, 2].set_axis_off()
+axes[1, 2].set_title("Relative % Difference\nin Private Room Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
+cbar6 = fig.colorbar(map6.get_children()[0], ax=axes[1, 2], orientation="vertical", fraction=0.02, pad=0.02, shrink=0.5)
+cbar6.set_label("Relative % Difference", fontsize=10)
+cbar6.outline.set_visible(False)
+
+plt.tight_layout()
+plt.subplots_adjust(hspace=-0.3, wspace=0.2)  # Adjust gaps between rows and columns
+plt.show()
+```
+
+```{python}
+import geopandas as gpd
+import contextily as ctx
+import matplotlib.pyplot as plt
+from matplotlib.colors import TwoSlopeNorm
+
+# Ensure the LSOA data has the necessary 'total_entireha' column and compute the relative % difference
+# Calculate the vmin and vmax values for custom normalization
+vmin_lsoa = -100
+vmax_lsoa = 100
+
+# Create TwoSlopeNorm instance for custom normalization
+norm_lsoa = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
+
+# Create the plot for the LSOA map with relative % difference in 'total_entireha'
+fig, ax = plt.subplots(1, 1, figsize=(15, 10), dpi=300)
+
+# Plot 'total_entireha' for LSOAs with custom normalization
+map_plot = diff2024_2023_lsoa.plot(column='total_entireha', ax=ax, legend=False,
+                                   cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa, alpha=0.7)
+
+# Add OpenStreetMap background using contextily
+ctx.add_basemap(ax, crs=diff2024_2023_lsoa.crs.to_string(), source=ctx.providers.OpenStreetMap.Mapnik, zoom=12)
+
+# Add colorbar for the map
+cbar = fig.colorbar(map_plot.get_children()[0], ax=ax, orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+cbar.set_label("Relative % Difference", fontsize=10)
+cbar.outline.set_visible(False)  # Remove border from the colorbar
+
+# Set title for the map
+ax.set_title("Relative % Difference\nin Entire Home Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
+
+# Set axis limits and remove axes
+ax.set_axis_off()
+
+# Show the plot
 plt.tight_layout()
 plt.show()
-
-print(f"While number of private rooms dropped, the number of entire homes increased considerably. It is possible that the flats with rooms on airbnb converted to entire homes listings.")
 ```
 
 ```{python}
@@ -1449,3 +1627,6 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
+
+
+
