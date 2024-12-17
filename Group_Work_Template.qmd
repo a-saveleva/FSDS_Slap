@@ -18,9 +18,6 @@ format:
     include-in-header:
       text: |
         \addtokomafont{disposition}{\rmfamily}
-    mainfont: Spectral
-    sansfont: Roboto Flex
-    monofont: InputMonoCondensed
     papersize: a4
     geometry:
       - top=25mm
@@ -122,6 +119,9 @@ pd.options.display.max_colwidth = 200
 # file size checks into the workflow
 #_____________________________________________________________________________________________________________________________
 
+import os
+import requests
+
 # parameters for the github url
 owner = "a-saveleva"  # github username
 repo = "FSDS_Slap"  # repo name
@@ -171,11 +171,12 @@ def download_folders(folder_path):
             elif item["type"] == "dir":
                 subfolder_path = os.path.join(folder_path, item["name"])
                 print(f"Entering folder: {subfolder_path}")
-                download_all_folders(subfolder_path)
+
+                download_folders(subfolder_path)  # Fix: recursive call to itself
     else:
         print(f"Unable to retrieve folder {folder_path}: {response.status_code} {response.text}")
 
-# call download_all_folders to start downloading data files
+# call download_folders to start downloading data files
 download_folders(base_folder)
 print(f"All {base_folder} downloads complete!")
 ```
@@ -207,7 +208,9 @@ def download_file_types(file_extensions):
                 if file_extension in file_extensions:
                     file_url = item["download_url"]
                     local_path = os.path.join(root_dir, file_name)
-                   # Check if the file already exists locally
+
+                    # Check if the file already exists locally
+
                     if os.path.exists(local_path):
                         local_size = os.path.getsize(local_path)
                         response_head = requests.head(file_url)
@@ -236,14 +239,13 @@ def download_file_types(file_extensions):
 file_types = [".bib", ".csl"]
 
 # Start downloading files
-print(f"Starting download of {file_types_to_download} from root folder...")
+print(f"Starting download of {file_types} from root folder...")
 download_file_types(file_types)
-print(f"All {file_types_to_download} downloads complete!")
+print(f"All {file_types} downloads complete!")
 ```
 
 ```{python}
 #| include: false
-
 def cache_data(src:str) -> str:
     """Downloads and caches a remote file locally.
     src : str - The remote *source* for the file, any valid URL should work.
@@ -1056,7 +1058,8 @@ print("We can see that the listings from multi-listing hosts have more rooms in 
 ```
 
 ```{python}
-#| echo: false
+#| include: false
+
 multi_listing_hosts_2023 = airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1]
 multi_listing_hosts_2024 = airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1]
 
@@ -1840,36 +1843,41 @@ plot_local_autocorrelation(lisa, Rgdf, 'residuals')
 ```{python}
 # #| echo: false
 
-# Set normalization for residuals
+# Set the limits for the color scale using raw residual values
 vmin = Rgdf['residuals'].min()
 vmax = Rgdf['residuals'].max()
-norm = TwoSlopeNorm(vmin=vmin, vcenter=0, vmax=vmax)
 
-# Plot the residuals with axes and consistent colorbar
-fig, ax = plt.subplots(1, 1, figsize=(10, 8))
+# Create the figure and axis
+fig, ax = plt.subplots(figsize=(10, 8))
 
-# Choropleth map
+# Plot the residuals map without normalization
 Rgdf.plot(
     column='residuals',
-    cmap='coolwarm',
-    norm=norm,
-    edgecolor="black",
-    linewidth=0.5,
-    legend=True,
-    legend_kwds={'label': "Residual Value", 'orientation': "horizontal"},
-    ax=ax
+    cmap='magma_r',  # Matching the color scheme
+    edgecolor='white',
+    linewidth=0.8,
+    vmin=vmin,       # Use raw minimum
+    vmax=vmax,       # Use raw maximum
+    ax=ax,
+    legend=False     # Turn off default legend
 )
 
-# Add axes labels
-ax.set_title("Spatial Distribution of Residuals", fontsize=12, fontweight="bold")
-ax.set_xlabel("Longitude", fontsize=10)
-ax.set_ylabel("Latitude", fontsize=10)
+# Add custom colorbar
+sm = plt.cm.ScalarMappable(cmap='magma_r', norm=mpl.colors.Normalize(vmin=vmin, vmax=vmax))
+sm._A = []  # Dummy array for colorbar
+cbar = fig.colorbar(sm, ax=ax, orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+cbar.set_label("Residual Value", fontsize=12)
+cbar.outline.set_visible(False)  # Remove the colorbar border
 
-# Force proper axis limits for clean layout
-ax.set_xlim(Rgdf.total_bounds[0], Rgdf.total_bounds[2])
-ax.set_ylim(Rgdf.total_bounds[1], Rgdf.total_bounds[3])
+# Set title and formatting
+ax.set_title("Spatial Distribution of Residuals", fontsize=14, loc='left')
+ax.set_axis_off()  # Hide axes for cleaner layout
 
-# Adjust layout
+# Adjust axis limits
+ax.set_xlim([501000, 563000])
+ax.set_ylim([155000, 202000])
+
+# Adjust layout for a clean look
 plt.tight_layout()
 plt.show()
 ```
@@ -1907,3 +1915,4 @@ Greater support is needed to encourage property owners to prioritize long-term r
 Under the new rules, homeowners will be able to let their primary residence for up to 90 nights annually without planning permission, and dedicated short-term lets will be automatically reclassified into a new use class. This approach does not provide landlords sufficient time to assess the revenue implications, particularly if proposed incentives for long-term rentals are introduced. The government should reconsider the automatic reclassification of short-term lets.
 
 ## References
+
