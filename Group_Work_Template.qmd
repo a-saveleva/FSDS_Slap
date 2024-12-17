@@ -1866,7 +1866,7 @@ plt.show()
 
 To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionally, a more robust regression model can be undertaken that accounts for the uneven spread of residuals.
 
-###Potential analysis expansion:
+### Potential analysis expansion:
 Below are the potential additional variables that could be tested in the future in multiple linear regression:
 * Social housing waiting times;
 * No-fault evictions;
@@ -1897,3 +1897,4 @@ Greater support is needed to encourage property owners to prioritize long-term r
 Under the new rules, homeowners will be able to let their primary residence for up to 90 nights annually without planning permission, and dedicated short-term lets will be automatically reclassified into a new use class. This approach does not provide landlords sufficient time to assess the revenue implications, particularly if proposed incentives for long-term rentals are introduced. The government should reconsider the automatic reclassification of short-term lets.
 
 ## References
+
