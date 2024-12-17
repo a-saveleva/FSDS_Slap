@@ -54,12 +54,18 @@ import pandas as pd
 import geopandas as gpd
 import requests
 import zipfile
+
 import matplotlib.cm as cm
 import matplotlib.pyplot as plt
 from matplotlib.colors import TwoSlopeNorm
+import matplotlib.colors as mcolors
+import matplotlib.pyplot as plt
+import matplotlib as mpl 
+
 from scipy.spatial.distance import pdist, squareform
 from scipy.cluster.hierarchy import fcluster, linkage
 from scipy.stats import entropy
+
 from dateutil.relativedelta import relativedelta
 from datetime import datetime
 from PIL import Image
@@ -83,9 +89,7 @@ from scipy.stats import skew
 from libpysal.weights import Queen
 from libpysal import weights
 from shapely.ops import unary_union
-import matplotlib.colors as mcolors
-import matplotlib.pyplot as plt
-
+import contextily as ctx
 
 pd.set_option('display.max_columns', None)
 pd.options.display.max_colwidth = 200
@@ -1058,8 +1062,6 @@ plt.show()
 
 ```{python}
 #| include: false
-from matplotlib.colors import TwoSlopeNorm
-
 # Ensure the columns exist and calculate vmin and vmax for both datasets
 vmin_boro = min(diff2024_2023_boro['total_entireha'].min(), 
                 diff2024_2023_boro['total_privateroom'].min(), 
@@ -1131,40 +1133,6 @@ cbar6 = fig.colorbar(map6.get_children()[0], ax=axes[1, 2], orientation="vertica
 cbar6.set_label("Relative % Difference", fontsize=10)
 cbar6.outline.set_visible(False)
 
-# Determine the min and max values across both columns
-vmin = min(diff2024_2023_lsoa['total_entireha'].min(), diff2024_2023_lsoa['total_privateroom'].min())
-vmax = max(diff2024_2023_lsoa['total_entireha'].max(), diff2024_2023_lsoa['total_privateroom'].max())
-
-# Create a TwoSlopeNorm instance
-norm = TwoSlopeNorm(vmin=-65, vcenter=0, vmax=65)
-
-# Create the subplots
-fig, axes = plt.subplots(1, 2, figsize=(15, 8))
-
-# Plot 'total_entireha' with shared color scale and custom normalization
-diff2024_2023_lsoa.plot(column='total_entireha', ax=axes[0], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='white', linewidth=0.1,
-                        norm=norm)  # Apply custom normalization
-
-# Add title and labels
-axes[0].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"Entire home/apt\" rentals by LSOA, 2024-2023", fontsize=8)
-axes[0].set_xlabel("Longitude")
-axes[0].set_ylabel("Latitude")
-
-# Plot 'total_privateroom' with shared color scale and custom normalization
-diff2024_2023_lsoa.plot(column='total_privateroom', ax=axes[1], legend=True,
-                        legend_kwds={'label': "Relative Percentage Difference in Points by Area, %",
-                                     'orientation': "horizontal"},
-                        cmap='coolwarm', edgecolor='white', linewidth=0.1,
-                        norm=norm)  # Apply custom normalization
-
-# Add title and labels
-axes[1].set_title("Relative Percentage Difference in count of the AirBnb locations available as \"private room\" rentals by LSOA, 2024-2023", fontsize=8)
-axes[1].set_xlabel("Longitude")
-axes[1].set_ylabel("Latitude")
-
 # Adjust layout for better spacing
 plt.tight_layout()
 plt.subplots_adjust(hspace=-0.3, wspace=0.2)  # Adjust gaps between rows and columns
@@ -1172,11 +1140,7 @@ plt.show()
 ```
 
 ```{python}
-import geopandas as gpd
-import contextily as ctx
-import matplotlib.pyplot as plt
-from matplotlib.colors import TwoSlopeNorm
-
+#| include: false
 # Ensure the LSOA data has the necessary 'total_entireha' column and compute the relative % difference
 # Calculate the vmin and vmax values for custom normalization
 vmin_lsoa = -100
@@ -1813,6 +1777,7 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
+
 
 
 
