@@ -19,9 +19,6 @@ format:
     include-in-header:
       text: |
         \addtokomafont{disposition}{\rmfamily}
-    mainfont: Spectral
-    sansfont: Roboto Flex
-    monofont: InputMonoCondensed
     papersize: a4
     geometry:
       - top=25mm
@@ -105,6 +102,9 @@ pd.options.display.max_colwidth = 200
 # file size checks into the workflow
 #_____________________________________________________________________________________________________________________________
 
+import os
+import requests
+
 # parameters for the github url
 owner = "a-saveleva"  # github username
 repo = "FSDS_Slap"  # repo name
@@ -154,11 +154,11 @@ def download_folders(folder_path):
             elif item["type"] == "dir":
                 subfolder_path = os.path.join(folder_path, item["name"])
                 print(f"Entering folder: {subfolder_path}")
-                download_all_folders(subfolder_path)
+                download_folders(subfolder_path)  # Fix: recursive call to itself
     else:
         print(f"Unable to retrieve folder {folder_path}: {response.status_code} {response.text}")
 
-# call download_all_folders to start downloading data files
+# call download_folders to start downloading data files
 download_folders(base_folder)
 print(f"All {base_folder} downloads complete!")
 ```
@@ -220,9 +220,9 @@ def download_file_types(file_extensions):
 file_types = [".bib", ".csl"]
 
 # Start downloading files
-print(f"Starting download of {file_types_to_download} from root folder...")
+print(f"Starting download of {file_types} from root folder...")
 download_file_types(file_types)
-print(f"All {file_types_to_download} downloads complete!")
+print(f"All {file_types} downloads complete!")
 ```
 
 ```{python}
@@ -1039,7 +1039,8 @@ print("We can see that the listings from multi-listing hosts have more rooms in 
 ```
 
 ```{python}
-#| echo: false
+#| include: false
+
 multi_listing_hosts_2023 = airbnb_gdf_clean[0][airbnb_gdf_clean[0]['new_host_listings_count'] > 1]
 multi_listing_hosts_2024 = airbnb_gdf_clean[1][airbnb_gdf_clean[1]['new_host_listings_count'] > 1]
 
