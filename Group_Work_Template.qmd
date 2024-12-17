@@ -46,50 +46,6 @@ jupyter:
     name: base
 ---
 
-jupyter:
-  jupytext:
-    text_representation:
-      extension: .qmd
-      format_name: quarto
-      format_version: '1.0'
-      jupytext_version: 1.16.4
-  kernelspec:
-    display_name: Python (base)
-    language: python
-    name: base
-
-
-
-##1. Who collected the InsideAirbnb data?
----
-
-InsideAirbnb is a non-profit organisation founded and maintained by Murray Cox, a New York-based community activist, with contributions from John Morris, Taylor Higgins, and oversight from the Advisory Board [@insideairbnb].
-
-## 2. Why did they collect the InsideAirbnb data?
-
-The initial motivation was to address gaps in Airbnb's self-reported statistics, which may not fully reflect the platform's impact on housing [@Cox2016]. InsideAirbnb exposes abuses of power within the Airbnb model and promotes open, shared data for social justice [@Cox2023, Cox2021, @insideairbnbDataPolicies].
-
-## 3. How was the InsideAirbnb data collected?  
-
-Data is scraped quarterly from Airbnb's public site using open-source tools - Python and PostgreSQL [@tomslee]. The process involves verification, cleansing, analysis, and aggregation. These are the assumptions, since the scripts are unavailable.
-
-## 4. How does the method of collection impact the completeness and/or accuracy of the InsideAirbnb data set's representation of the process it seeks to study, and what wider issues does this raise?
-
-The quality and completeness of the scraped dataset is determined by the openness of the platform, and the validity of the scraping. Both can’t be guaranteed. Inaccuracies include imprecise location, inconclusive calendar availability and pricing, and presence of redundant or duplicated listings [@insideairbnbDataAssumptions], among others [@Alsudais2020].
-While anonymisation and partial redundancy of the snapshot data are expected, and the ridiculously high prices appearing in the dataset are a way to trick the algorithm [@GutHend2018], the latter two present a major limitation for research and, subsequently, policy-making related to STL (short-term lets). 
-A unique case of data disclosure for London social housing fraud exists [@Hoult2022], but Airbnb generally prevents access to meaningful data and fails to block unlawful listings [@Tims2024]. It displays available dates, merging booked and unavailable into one category. As a result, availability is an unreliable metric. Hosts can keep calendars open year-round and close them near the 90-day limit, and it is unclear where they are on that scale.
-The website features a 90-day counter to block further bookings, visible to hosts only [@airbnbRentHome]. There are many cases of hosts listing the same property multiple times, or both the entire home and individual rooms, to overcome this block. This could lead to over-counting and distorted estimates, pending further analysis.
-
-## 5. What ethical considerations does the use of the InsideAirbnb data raise? 
-
-Privacy concerns arise as aggregated data risks re-identification, especially in smaller areas or via cross-referencing, raising informed consent issues [@Ohm2009]. Biases in the data itself are also a concern, as the data may overrepresent certain neighbourhoods or property types, causing misleading conclusions [@Brenning2023, @insideairbnbDataAssumptions]. The authors' activist framing suggests a negative view of Airbnb’s effects. It raises reflexivity concerns: are biases fully acknowledged? Benefits to one group may harm others, including Airbnb hosts and related industries. 
-Potential impact of research findings should also be considered. Highlighting STL benefits could worsen gentrification and housing shortages, and policy use of findings may disrupt housing markets - there is a discussion on how recently proposed changes to STL regulation might worsen the housing crisis [@londoncouncilsBoroughsShare].
-To mitigate these issues, researchers must ensure transparency in their methods and consider the potential harm their findings could cause to local communities [@Prentice2023, @Alsudais2020].
-
-## 6. With reference to the InsideAirbnb data (*i.e.* using numbers, figures, maps, and descriptive statistics), what does an analysis of Hosts and Listing types suggest about the nature of Airbnb lets in London? 
-
-We cleaned the InsideAirbnb data by defining active listings as those with recent reviews, removing null price and bed data as errors, and flagging listings available more than the London average [@onsHostsListings] as commercial. In 2023, 152,050 nights were booked across 111,880 STLs in London, averaging 5.84 nights per listing. We filtered out listings and hosts with “fair” platform use. Duplicates were detected using a tailored algorithm with 67-74% accuracy, validated via randomized sampling.
-
 ```{python}
 #| include: false
 import os
@@ -991,6 +947,7 @@ print("23% of multi-listing hosts have only 2 listings in 2024. However, the res
 
 ```{python}
 #| include: false
+# ChatGPT was used here to add additional verification of matching geometry, This is because we are allowing the user to try other InsideAirbnb datasets which we didn't test
 def rel_prcnt_change_gdfs(gdf_old, gdf_new, cols):
     """
     Function to find different in number of listings between 2 dates.
@@ -1040,6 +997,7 @@ diff2024_2023_boro["total_airbnbs"].hist()
 
 ```{python}
 #| echo: false
+# ChatGPT was used here to plot in grid, and achieve the desired stye
 diff2024_2023_boro1 = pd.merge(
     diff2024_2023_boro,  # Left DataFrame
     df_CoreDemographics[['mnemonic', 'Total_Dwellings']],  # Right DataFrame with relevant columns
@@ -1112,6 +1070,7 @@ plt.show()
 
 ```{python}
 #| include: false
+# ChatGPT was used here to plot in grid, and achieve the desired stye
 # Ensure the columns exist and calculate vmin and vmax for both datasets
 vmin_boro = min(diff2024_2023_boro['total_entireha'].min(), 
                 diff2024_2023_boro['total_privateroom'].min(), 
@@ -1191,6 +1150,9 @@ plt.show()
 
 ```{python}
 # #| include: false
+# ChatGPT was used here to plot in grid, and achieve the desired stye
+# This map is high resolution and therefore commented out. Run this cell if you want to explore localised patterns with Openstreetmap underlay
+
 # # Ensure the LSOA data has the necessary 'total_entireha' column and compute the relative % difference
 # # Calculate the vmin and vmax values for custom normalization
 # vmin_lsoa = -100
