@@ -3,15 +3,14 @@ bibliography: bio.bib
 csl: harvard-cite-them-right.csl
 title: Slap Group Project
 execute:
-  echo: false
-  freeze: true
+  kernel: python3
 format:
   html:
     code-copy: true
     code-link: true
     toc: true
     toc-title: On this page
-    toc-depth: 2
+    toc-depth: 3
     toc_float:
       collapsed: false
       smooth_scroll: true
@@ -1359,8 +1358,7 @@ We base our research on the independent studies conducted in 2019 and 2020 [@Sha
 
 ### Results and interpretation:
 
-
-MORE TEXT FROM SADIA?
+The model explains about 53% of the variation in rental prices (R²), offering a solid understanding of the main factors influencing rent changes.
 
 ```{python}
 #| include: false
