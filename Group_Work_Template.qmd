@@ -19,9 +19,6 @@ format:
     include-in-header:
       text: |
         \addtokomafont{disposition}{\rmfamily}
-    mainfont: Spectral
-    sansfont: Roboto Flex
-    monofont: Liberation Mono
     papersize: a4
     geometry:
       - top=25mm
@@ -48,19 +45,25 @@ jupyter:
 
 ## Declaration of Authorship {.unnumbered .unlisted}
 We, [Slap], pledge our honour that the work presented in this assessment is our own. Where information has been derived from other sources, we confirm that this has been indicated in the work. Where a Large Language Model such as ChatGPT has been used we confirm that we have made its contribution to the final submission clear.
+
 Date: 17.12.2024
+
 Student Numbers: 20017452, 24246337, 25000148, 24231390, 24242570.
+
 ## Brief Group Reflection
 | What Went Well | What Was Challenging |
 | -------------- | -------------------- |
-| A We identified the project scope early, and spent most of the time on interpretation, discussion and refinements to EDA   | B Interpretation of residuals |
-| C  We are seeing some impact which we expected to see | D     Cleaning and deduplicating the InsideAirbnb dataset |
+| We identified the project scope early, and spent most of the time on interpretation, discussion and refinements to EDA   | Interpretation of residuals |
+| We are seeing some impact which we expected to see | Cleaning and deduplicating the InsideAirbnb dataset, and dealing with limitations |
+
 ## Priorities for Feedback
 Are there any areas on which you would appreciate more detailed feedback if we're able to offer it?
 * Our approach to identifying valid airbnbs
 * Our approach to interpretation
 * Our suggestions for future STL regulation
+
 {{< pagebreak >}}
+
 # Response to Questions
 See the raw file for examples of how to hide computational output as there is code hidden here.
 
