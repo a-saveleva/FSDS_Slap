@@ -124,10 +124,10 @@ pd.options.display.max_colwidth = 200
 ```
 
 ```{python}
-#| echo: false
+#| include: false
 
 #_____________________________________________________________________________________________________________________________
-# Download data files from gitbub repo to data folder and save these to the  
+# Download data files from github repo from data folder and save these to the  
 # same folder structure as the github repo
 # ChatGPT was used to troubleshoot issues with building the function and adding
 # file size checks into the workflow
@@ -138,13 +138,14 @@ owner = "a-saveleva"  # github username
 repo = "FSDS_Slap"  # repo name
 base_folder = "data"  # starting folder
 branch = "main"  # branch name, use 'main' as default
-root_dir = ""  # folder to save files locally, "" is the root folder
+root_dir = os.getcwd()  # Use the script's current working directory
+os.makedirs(root_dir, exist_ok=True) # ensure root directory exists
 
 # build the url from the parameters
 api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/"
 
-# create function to download all files within data folder
-def download_all_folders(folder_path):
+# create function to download all files within specified folder
+def download_folders(folder_path):
     url = f"{api_url}{folder_path}?ref={branch}"
     response = requests.get(url)
     if response.status_code == 200:
@@ -186,8 +187,70 @@ def download_all_folders(folder_path):
         print(f"Unable to retrieve folder {folder_path}: {response.status_code} {response.text}")
 
 # call download_all_folders to start downloading data files
-download_all_folders(base_folder)
-print("All downloads completed!")
+download_folders(base_folder)
+print(f"All {base_folder} downloads complete!")
+```
+
+```{python}
+#| include: false
+
+#_____________________________________________________________________________________________________________________________
+# Download specific files by type that are required for the output
+# Adapted from the download_folders code above which used ChatGPT 
+# for troubleshooting
+#_____________________________________________________________________________________________________________________________
+
+
+def download_file_types(file_extensions):
+    """
+    Download specific file types from the root folder of the github repository.
+    """
+    url = f"{api_url}?ref={branch}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        contents = response.json()
+        for item in contents:
+            if item["type"] == "file":
+                file_name = item["name"]
+                file_extension = os.path.splitext(file_name)[1].lower()
+
+                # Check if the file matches the desired extensions
+                if file_extension in file_extensions:
+                    file_url = item["download_url"]
+                    local_path = os.path.join(root_dir, file_name)
+
+                    # Check if the file already exists locally
+                    if os.path.exists(local_path):
+                        local_size = os.path.getsize(local_path)
+                        response_head = requests.head(file_url)
+                        remote_size = int(response_head.headers.get('Content-Length', 0))
+
+                        if local_size == remote_size:
+                            print(f"Skipping {file_name}, already exists locally and is up-to-date.")
+                            continue
+                        else:
+                            print(f"File {file_name} exists but size differs, re-downloading.")
+
+                    # Download the file
+                    print(f"Downloading {file_name} to {local_path}...")
+                    file_response = requests.get(file_url)
+                    if file_response.status_code == 200:
+                        with open(local_path, "wb") as f:
+                            f.write(file_response.content)
+                        file_size = len(file_response.content) / 1024
+                        print(f"Download complete: {file_name} ({file_size:.2f} KB)")
+                    else:
+                        print(f"Failed to download {file_name}: {file_response.status_code}")
+    else:
+        print(f"Failed to fetch root folder contents: {response.status_code} {response.text}")
+
+# Define the file types to download
+file_types = [".bib", ".csl"]
+
+# Start downloading files
+print(f"Starting download of {file_types_to_download} from root folder...")
+download_file_types(file_types)
+print(f"All {file_types_to_download} downloads complete!")
 ```
 
 ```{python}
