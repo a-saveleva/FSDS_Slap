@@ -3,7 +3,8 @@ bibliography: bio.bib
 csl: harvard-cite-them-right.csl
 title: Slap Group Project
 execute:
-  kernel: python3
+  echo: false
+  freeze: true
 format:
   html:
     code-copy: true
@@ -18,6 +19,9 @@ format:
     include-in-header:
       text: |
         \addtokomafont{disposition}{\rmfamily}
+    mainfont: Spectral
+    sansfont: Roboto Flex
+    monofont: Liberation Mono
     papersize: a4
     geometry:
       - top=25mm
@@ -1915,4 +1919,3 @@ Greater support is needed to encourage property owners to prioritize long-term r
 Under the new rules, homeowners will be able to let their primary residence for up to 90 nights annually without planning permission, and dedicated short-term lets will be automatically reclassified into a new use class. This approach does not provide landlords sufficient time to assess the revenue implications, particularly if proposed incentives for long-term rentals are introduced. The government should reconsider the automatic reclassification of short-term lets.
 
 ## References
-
