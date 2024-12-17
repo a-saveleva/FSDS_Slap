@@ -142,8 +142,74 @@ pd.options.display.max_colwidth = 200
 ```
 
 ```{python}
-#| include: false
+#| echo: false
 
+#_____________________________________________________________________________________________________________________________
+# Download data files from gitbub repo to data folder and save these to the  
+# same folder structure as the github repo
+# ChatGPT was used to troubleshoot issues with building the function and adding
+# file size checks into the workflow
+#_____________________________________________________________________________________________________________________________
+
+# parameters for the github url
+owner = "a-saveleva"  # github username
+repo = "FSDS_Slap"  # repo name
+base_folder = "data"  # starting folder
+branch = "main"  # branch name, use 'main' as default
+root_dir = ""  # folder to save files locally, "" is the root folder
+
+# build the url from the parameters
+api_url = f"https://api.github.com/repos/{owner}/{repo}/contents/"
+
+# create function to download all files within data folder
+def download_all_folders(folder_path):
+    url = f"{api_url}{folder_path}?ref={branch}"
+    response = requests.get(url)
+    if response.status_code == 200:
+        contents = response.json()
+        for item in contents:
+            if item["type"] == "file":
+                file_url = item["download_url"]
+                local_path = os.path.join(root_dir, folder_path, item["name"])
+                os.makedirs(os.path.dirname(local_path), exist_ok=True)
+                
+                # check if the file already exists
+                if os.path.exists(local_path):
+                    local_size = os.path.getsize(local_path)
+                    response_head = requests.head(file_url)
+                    remote_size = int(response_head.headers.get('Content-Length', 0))
+
+                    # if file exists then check that the file size is the same
+                    if local_size == remote_size:
+                        print(f"Skip {item['name']} as it already exists locally and is up-to-date.")
+                        continue
+                    else:
+                        print(f"File {item['name']} exists but file size differs, re-downloading....")
+                
+                # download file
+                print(f"Downloading {item['name']} to {local_path}...")
+                file_response = requests.get(file_url)
+                if file_response.status_code == 200:
+                    with open(local_path, "wb") as f:
+                        f.write(file_response.content)
+                    file_size = len(file_response.content) / 1024
+                    print(f"Download complete: {item['name']} ({file_size:.2f} KB)")
+                else:
+                    print(f"Failed to download {item['name']}: {file_response.status_code}")
+            elif item["type"] == "dir":
+                subfolder_path = os.path.join(folder_path, item["name"])
+                print(f"Entering folder: {subfolder_path}")
+                download_all_folders(subfolder_path)
+    else:
+        print(f"Unable to retrieve folder {folder_path}: {response.status_code} {response.text}")
+
+# call download_all_folders to start downloading data files
+download_all_folders(base_folder)
+print("All downloads completed!")
+```
+
+```{python}
+#| include: false
 def cache_data(src:str) -> str:
     """Downloads and caches a remote file locally.
     src : str - The remote *source* for the file, any valid URL should work.
