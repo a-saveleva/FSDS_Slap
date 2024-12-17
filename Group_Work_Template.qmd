@@ -1,4 +1,19 @@
 ---
+jupyter:
+  jupytext:
+    text_representation:
+      extension: .qmd
+      format_name: quarto
+      format_version: '1.0'
+      jupytext_version: 1.16.4
+  kernelspec:
+    display_name: Python (base)
+    language: python
+    name: base
+---
+
+```{python}
+---
 bibliography: bio.bib
 csl: harvard-cite-them-right.csl
 title: Group Name's Group Project
@@ -45,6 +60,37 @@ jupyter:
     language: python
     name: base
 ---
+```
+
+
+## 1. Who collected the InsideAirbnb data?
+
+InsideAirbnb is a non-profit organisation founded and maintained by Murray Cox, a New York-based community activist, with contributions from John Morris, Taylor Higgins, and oversight from the Advisory Board (source).
+
+## 2. Why did they collect the InsideAirbnb data?
+
+The initial motivation was to address gaps in Airbnb's self-reported statistics, which may not fully reflect the platform's impact on housing (source). InsideAirbnb exposes abuses of power within the Airbnb model and promotes open, shared data for social justice (source1, source2, source3).
+
+## 3. How was the InsideAirbnb data collected?  
+
+Data is scraped quarterly from Airbnb's public site using open-source tools - Python and PostgreSQL (source). The process involves verification, cleansing, analysis, and aggregation. These are the assumptions, since the scripts are unavailable.
+
+## 4. How does the method of collection impact the completeness and/or accuracy of the InsideAirbnb data set's representation of the process it seeks to study, and what wider issues does this raise?
+
+The quality and completeness of the scraped dataset is determined by the openness of the platform, and the validity of the scraping. Both can’t be guaranteed. Inaccuracies include imprecise location, inconclusive calendar availability and pricing, and presence of redundant or duplicated listings (source), among others (source).
+While anonymisation and partial redundancy of the snapshot data are expected, and the ridiculously high prices appearing in the dataset are a way to trick the algorithm (source), the latter two present a major limitation for research and, subsequently, policy-making related to STL (short-term lets). 
+A unique case of data disclosure for London social housing fraud exists (source), but Airbnb generally prevents access to meaningful data and fails to block unlawful listings (source). It displays available dates, merging booked and unavailable into one category. As a result, availability is an unreliable metric. Hosts can keep calendars open year-round and close them near the 90-day limit, and it is unclear where they are on that scale.
+The website features a 90-day counter to block further bookings, visible to hosts only (source). There are many cases of hosts listing the same property multiple times, or both the entire home and individual rooms, to overcome this block. This could lead to over-counting and distorted estimates, pending further analysis.
+
+## 5. What ethical considerations does the use of the InsideAirbnb data raise? 
+
+Privacy concerns arise as aggregated data risks re-identification, especially in smaller areas or via cross-referencing, raising informed consent issues (source). Biases in the data itself are also a concern, as the data may overrepresent certain neighbourhoods or property types, causing misleading conclusions (Source), (Source). The authors' activist framing suggests a negative view of Airbnb’s effects. It raises reflexivity concerns: are biases fully acknowledged? Benefits to one group may harm others, including Airbnb hosts and related industries. 
+Potential impact of research findings should also be considered. Highlighting STL benefits could worsen gentrification and housing shortages, and policy use of findings may disrupt housing markets - there is a discussion on how recently proposed changes to STL regulation might worsen the housing crisis (source).
+To mitigate these issues, researchers must ensure transparency in their methods and consider the potential harm their findings could cause to local communities (source) (source).
+
+## 6. With reference to the InsideAirbnb data (*i.e.* using numbers, figures, maps, and descriptive statistics), what does an analysis of Hosts and Listing types suggest about the nature of Airbnb lets in London? 
+
+We cleaned the InsideAirbnb data by defining active listings as those with recent reviews, removing null price and bed data as errors, and flagging listings available more than the London average (source) as commercial. In 2023, 152,050 nights were booked across 111,880 STLs in London, averaging 5.84 nights per listing. We filtered out listings and hosts with “fair” platform use. Duplicates were detected using a tailored algorithm with 67-74% accuracy, validated via randomized sampling.
 
 ```{python}
 #| include: false
@@ -844,6 +890,14 @@ ax.set_ylim(155000, 202000)
 #plt.savefig(os.path.join('img','borough_map_with_air_bnb_locations.png'), dpi=150)
 ```
 
+# Growing number of listings
+We identified 28,207 active London listings in 2024 - 55.22% year-on-year increase. The listings accounted for 0.48% and 0.74% of total dwellings respectively (source, source); entire homes - 0.35% and 0.58% respectively, in contrast to other sources (source1). The central areas exhibit the highest proportion of Airbnb listings relative to total dwellings, and this share increased progressively across these and adjacent boroughs from 2023 to 2024.
+# Trend towards entire homes
+In 2024, the percentage of entire homes on Airbnb increased to 78%, up from 73% in 2023. The share of private rooms decreased from 26% to 21%, indicating a trend towards more entire homes, which have a greater impact on housing. Some sources suggest STL ease and higher revenue may incentivize removing properties from long-term rental markets (source, source), even if they start STL as a private room. We therefore see the need to expand the methodology to include private rooms into the research scope.
+# More multi-listing hosts
+The proportion of multi-listing hosts increased from 53% in 2023 to 57% in 2024, with 36% of these hosts having two listings. The average number of listings per multi-listing host rose from 14.8 to 19.5, and nearly 10% now manage more than 10 listings. Notably, there is growing prevalence of one-bedroom and 3+ bedroom listings, suggesting that multi-listing hosts are increasingly occupying larger homes and one-bedroom properties. This trend may limit access to family-sized housing and properties for first buyers. The high average number of listings likely reflects the involvement of asset management companies, pointing to a trend towards greater commercialisation of the platform.
+We compare our observations with the Airbnb-endorsed studies (source1, source2). As seen from our EDA, the commercial use of the platform is increasing, and the impact on housing could be underestimated. We discuss it further in the next section.
+
 ```{python}
 #| include: false
 dwelling_count_2023 = 3790210
@@ -985,8 +1039,6 @@ diff2024_2023_boro.head(2)
 #| include: false
 diff2024_2023_boro["total_airbnbs"].hist()
 ```
-
-## Map Borough data
 
 ```{python}
 #| echo: false
@@ -1140,39 +1192,39 @@ plt.show()
 ```
 
 ```{python}
-#| include: false
-# Ensure the LSOA data has the necessary 'total_entireha' column and compute the relative % difference
-# Calculate the vmin and vmax values for custom normalization
-vmin_lsoa = -100
-vmax_lsoa = 100
+# #| include: false
+# # Ensure the LSOA data has the necessary 'total_entireha' column and compute the relative % difference
+# # Calculate the vmin and vmax values for custom normalization
+# vmin_lsoa = -100
+# vmax_lsoa = 100
 
-# Create TwoSlopeNorm instance for custom normalization
-norm_lsoa = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
+# # Create TwoSlopeNorm instance for custom normalization
+# norm_lsoa = TwoSlopeNorm(vmin=-100, vcenter=0, vmax=100)
 
-# Create the plot for the LSOA map with relative % difference in 'total_entireha'
-fig, ax = plt.subplots(1, 1, figsize=(15, 10), dpi=300)
+# # Create the plot for the LSOA map with relative % difference in 'total_entireha'
+# fig, ax = plt.subplots(1, 1, figsize=(15, 10), dpi=300)
 
-# Plot 'total_entireha' for LSOAs with custom normalization
-map_plot = diff2024_2023_lsoa.plot(column='total_entireha', ax=ax, legend=False,
-                                   cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa, alpha=0.7)
+# # Plot 'total_entireha' for LSOAs with custom normalization
+# map_plot = diff2024_2023_lsoa.plot(column='total_entireha', ax=ax, legend=False,
+#                                    cmap='coolwarm', edgecolor='white', linewidth=0.2, norm=norm_lsoa, alpha=0.7)
 
-# Add OpenStreetMap background using contextily
-ctx.add_basemap(ax, crs=diff2024_2023_lsoa.crs.to_string(), source=ctx.providers.OpenStreetMap.Mapnik, zoom=12)
+# # Add OpenStreetMap background using contextily
+# ctx.add_basemap(ax, crs=diff2024_2023_lsoa.crs.to_string(), source=ctx.providers.OpenStreetMap.Mapnik, zoom=12)
 
-# Add colorbar for the map
-cbar = fig.colorbar(map_plot.get_children()[0], ax=ax, orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
-cbar.set_label("Relative % Difference", fontsize=10)
-cbar.outline.set_visible(False)  # Remove border from the colorbar
+# # Add colorbar for the map
+# cbar = fig.colorbar(map_plot.get_children()[0], ax=ax, orientation="vertical", fraction=0.02, pad=0.02, shrink=0.6)
+# cbar.set_label("Relative % Difference", fontsize=10)
+# cbar.outline.set_visible(False)  # Remove border from the colorbar
 
-# Set title for the map
-ax.set_title("Relative % Difference\nin Entire Home Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
+# # Set title for the map
+# ax.set_title("Relative % Difference\nin Entire Home Listings\nby LSOA (2024-2023)", fontsize=12, loc='left')
 
-# Set axis limits and remove axes
-ax.set_axis_off()
+# # Set axis limits and remove axes
+# ax.set_axis_off()
 
-# Show the plot
-plt.tight_layout()
-plt.show()
+# # Show the plot
+# plt.tight_layout()
+# plt.show()
 ```
 
 ```{python}
@@ -1201,7 +1253,24 @@ plt.show()
 # print("Done.")
 ```
 
-## Ordinary Least Squares Regression
+## 7. Drawing on your previous answers, and supporting your response with evidence (*e.g.* figures, maps, EDA/ESDA, and simple statistical analysis/models drawing on experience from, e.g., CASA0007), how *could* the InsideAirbnb data set be used to inform the regulation of Short-Term Lets (STL) in London? 
+
+# Potential link between STL and housing crisis in London
+Despite a narrowing rent-wage gap, rising living costs force low-income Londoners to spend up to 77% of wages on housing. Higher mortgage rates further exclude many from homeownership, disproportionately impacting vulnerable populations, leading to poverty, evictions, overcrowding, or homelessness (source, source, source, source, source, source, source, source). There are many claims that STLs exacerbate this housing crisis, pushing the demand down to the social and private rental sector.
+In February 2024, the UK government announced reforms requiring planning permission for STLs exceeding 90 nights, and a mandatory STL registration scheme (source) that will close the STL data availability gap, discussed in Q4. Additionally, the furnished holiday lettings tax regime will be abolished (source). These continuous efforts aim to keep homes available for local communities.
+Airbnb claims no link between listing growth and rising housing costs, backed by studies discussed in Q6. A caveat of published studies is their UK-wide statistics for some parameters, which may not reflect London’s heated STL market. With Airbnb comprising 47% of European platform STL supply and 30% across all types, STL impacts on housing may be more significant (source, source).
+# Our research
+We base our research on the independent studies conducted in 2019 and 2020 (source, source). Our goal is to identify proxies accounting for the impacts of the Airbnb listings on housing in London. We utilise the methodology outlined in the articles above.
+# Datasets:
+* InsideAirbnb - see Q6 for details.
+* London Boroughs' administrative boundaries provide a foundation for decision-makers to conduct further analysis.
+* LSOA 2021 represent smaller geographies. Issues include potential misrepresentation of demographics, exclusion of daytime populations, and being too granular for effective citywide visualisation.
+* Census 2021 provides the most accurate population data, but results may be skewed due to limited mobility and migration during the Covid-19 pandemic.
+
+# Results and interpretation:
+
+
+MORE TEXT FROM SADIA?
 
 ```{python}
 #| include: false
@@ -1608,6 +1677,12 @@ print(vif_data)
 
 **plotting the residuals**
 
+The model suggests that for every 1% increase in the number of Airbnb listings, the change in rental prices grew by 0.065%. In areas where Airbnb listings would have doubled, featuring 100% increase, rents would have risen by an average of 6.5%. For tenants, this results in significant price increases: in central London, where average rents are around £2,121 per month, a 6.5% rise would add approximately £138 per month, or £1,656 per year. 
+
+Apart from Airbnb impact, the model results also show that neighborhoods closer to the centre see an additional 0.34% increase in rental prices for every kilometer closer. However, the percentage of vacant dwellings showed little connection to rent changes. 
+
+The story doesn’t end with just the numbers. The analysis also revealed that changes in rental prices are not evenly spread across the city. Tests on the residuals (errors) displayed uneven patterns in the data, and further spatial analysis confirmed significant clustering of residuals. 
+
 ```{python}
 #| include: false
 #once I grouped the data by boroughs I realised it was not really showing anything
@@ -1696,77 +1771,36 @@ plt.tight_layout()
 plt.show()
 ```
 
-## 1. Who collected the InsideAirbnb data?
+To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionally, a more robust regression model can be undertaken that accounts for the uneven spread of residuals.
 
-::: {.duedate}
+# Potential expansion:
+* Social housing waiting times
+* No-fault evictions
+* Total new rough sleepers
+* Average long-term room rental prices (e.g. from Spareroom)
+* % or N of Houses of Multiple Occupancy (source)
+* % or N of flatshare households
+* Property guardians
+* N of rooms in airbnb compared to n of homes on airbnb
 
-( 2 points; Answer due Week 7 )
+# Implications to the regulation of STL in London:
+**Promote casual STLs**
+Following the EDA, enforcing the 90-day rule remains crucial. Multi-listing hosts with large portfolios should be closely monitored for compliance, as they may duplicate listings to bypass platform restrictions. A centralized STL registry, as proposed in February 2024, would enhance transparency, ensure compliance, enable local councils to monitor STL density and trends, and effectively distinguish between casual and professional hosts.
 
-:::
+**Encourage private rooms not entire homes**
+Given the high concentration of listings, increased pressure on the rental market, and the 0.34% rent increase per kilometer closer to the city center, we propose implementing zoning restrictions in high-demand central boroughs such as Westminster, Camden, and Kensington & Chelsea, and in other areas based on rental market vulnerability, housing supply shortages, and local socioeconomic conditions. We suggest using spatial models (e.g., Spatial Lag/Error) to predict areas at risk of STL saturation and proactively apply regulation. These measures could cap the total number of listings or limit entire home rentals to encourage private room listings or overall reduction of the number of listings.
 
-An inline citation example: As discussed on @insideairbnb, there are many...
+**Address-based restrictions**
+The limitations of anonymized data restrict analysis of property types used for short-term lets. Once the STL registry is operational, regulations could target specific addresses, such as affordable housing, social housing, and newly built properties, to preserve their intended purpose of addressing housing needs rather than catering to tourists.
 
-A parenthetical citation example: There are many ways to research Airbnb [see, for example, @insideairbnb]... 
+**Redirect STL-generated taxes or fines**
+There is a potential to address declining homeownership through redirecting STL taxes or fines into affordable housing initiatives, supporting vulnerable renters and first-time buyers. Additionally, introducing an STL tax or levy in these areas could generate revenue to support affordable housing and community programs.
 
-## 2. Why did they collect the InsideAirbnb data?
+**Long-term rent should be made more profitable**
+Greater support is needed to encourage property owners to prioritize long-term rentals over short-term lets. Currently, STLs are widely promoted as the most profitable option. Policy solutions could include requiring hosts and platforms to conduct Social Impact Assessments to evaluate STL impacts on local housing markets during planning approvals. Additionally, adjustments to the tax regime for long-term rentals, funded through redirected STL taxes, could provide further incentives.
 
-::: {.duedate}
-
-( 4 points; Answer due Week 7 )
-
-:::
-
-```{python}
-#| output: asis
-print(f"One of way to embed output in the text looks like this: after cleaning, we were left with {df.shape[0]:,} rows of data.")
-```
-
-This way is also supposed to work (`{python} f"{df.shape[0]:,}" `) but I've found it less reliable.
-
-```{python}
-ax = df.host_listings_count.plot.hist(bins=50);
-ax.set_xlim([0,500]);
-```
-
-## 3. How was the InsideAirbnb data collected?  
-
-::: {.duedate}
-
-( 5 points; Answer due Week 8 )
-
-:::
-
-## 4. How does the method of collection impact the completeness and/or accuracy of the InsideAirbnb data set's representation of the process it seeks to study, and what wider issues does this raise?
-
-::: {.duedate}
-
-( 11 points; Answer due Week 9 )
-
-:::
-
-## 5. What ethical considerations does the use of the InsideAirbnb data raise? 
-
-::: {.duedate}
-
-( 18 points; Answer due {{< var assess.group-date >}} )
-
-:::
-
-## 6. With reference to the InsideAirbnb data (*i.e.* using numbers, figures, maps, and descriptive statistics), what does an analysis of Hosts and Listing types suggest about the nature of Airbnb lets in London? 
-
-::: {.duedate}
-
-( 15 points; Answer due {{< var assess.group-date >}} )
-
-:::
-
-## 7. Drawing on your previous answers, and supporting your response with evidence (*e.g.* figures, maps, EDA/ESDA, and simple statistical analysis/models drawing on experience from, e.g., CASA0007), how *could* the InsideAirbnb data set be used to inform the regulation of Short-Term Lets (STL) in London? 
-
-::: {.duedate}
-
-( 45 points; Answer due {{< var assess.group-date >}} )
-
-:::
+**The landlord should have a choice**
+Under the new rules, homeowners will be able to let their primary residence for up to 90 nights annually without planning permission, and dedicated short-term lets will be automatically reclassified into a new use class. This approach does not provide landlords sufficient time to assess the revenue implications, particularly if proposed incentives for long-term rentals are introduced. The government should reconsider the automatic reclassification of short-term lets.
 
 ## Sustainable Authorship Tools
 
@@ -1777,7 +1811,3 @@ Your QMD file should automatically download your BibTeX and CLS files and any ot
 Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
-
-
-
-
