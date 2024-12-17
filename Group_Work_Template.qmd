@@ -1,7 +1,7 @@
 ---
 bibliography: bio.bib
 csl: harvard-cite-them-right.csl
-title: Group Name's Group Project
+title: Slap Group Project
 execute:
   echo: false
   freeze: true
@@ -46,7 +46,6 @@ jupyter:
     name: base
 ---
 
----
 jupyter:
   jupytext:
     text_representation:
@@ -58,35 +57,38 @@ jupyter:
     display_name: Python (base)
     language: python
     name: base
-title: 1. Who collected the InsideAirbnb data?
+
+
+
+##1. Who collected the InsideAirbnb data?
 ---
 
-InsideAirbnb is a non-profit organisation founded and maintained by Murray Cox, a New York-based community activist, with contributions from John Morris, Taylor Higgins, and oversight from the Advisory Board (source).
+InsideAirbnb is a non-profit organisation founded and maintained by Murray Cox, a New York-based community activist, with contributions from John Morris, Taylor Higgins, and oversight from the Advisory Board [@insideairbnb].
 
 ## 2. Why did they collect the InsideAirbnb data?
 
-The initial motivation was to address gaps in Airbnb's self-reported statistics, which may not fully reflect the platform's impact on housing (source). InsideAirbnb exposes abuses of power within the Airbnb model and promotes open, shared data for social justice (source1, source2, source3).
+The initial motivation was to address gaps in Airbnb's self-reported statistics, which may not fully reflect the platform's impact on housing [@Cox2016]. InsideAirbnb exposes abuses of power within the Airbnb model and promotes open, shared data for social justice [@Cox2023, Cox2021, @insideairbnbDataPolicies].
 
 ## 3. How was the InsideAirbnb data collected?  
 
-Data is scraped quarterly from Airbnb's public site using open-source tools - Python and PostgreSQL (source). The process involves verification, cleansing, analysis, and aggregation. These are the assumptions, since the scripts are unavailable.
+Data is scraped quarterly from Airbnb's public site using open-source tools - Python and PostgreSQL [@tomslee]. The process involves verification, cleansing, analysis, and aggregation. These are the assumptions, since the scripts are unavailable.
 
 ## 4. How does the method of collection impact the completeness and/or accuracy of the InsideAirbnb data set's representation of the process it seeks to study, and what wider issues does this raise?
 
-The quality and completeness of the scraped dataset is determined by the openness of the platform, and the validity of the scraping. Both can’t be guaranteed. Inaccuracies include imprecise location, inconclusive calendar availability and pricing, and presence of redundant or duplicated listings (source), among others (source).
-While anonymisation and partial redundancy of the snapshot data are expected, and the ridiculously high prices appearing in the dataset are a way to trick the algorithm (source), the latter two present a major limitation for research and, subsequently, policy-making related to STL (short-term lets). 
-A unique case of data disclosure for London social housing fraud exists (source), but Airbnb generally prevents access to meaningful data and fails to block unlawful listings (source). It displays available dates, merging booked and unavailable into one category. As a result, availability is an unreliable metric. Hosts can keep calendars open year-round and close them near the 90-day limit, and it is unclear where they are on that scale.
-The website features a 90-day counter to block further bookings, visible to hosts only (source). There are many cases of hosts listing the same property multiple times, or both the entire home and individual rooms, to overcome this block. This could lead to over-counting and distorted estimates, pending further analysis.
+The quality and completeness of the scraped dataset is determined by the openness of the platform, and the validity of the scraping. Both can’t be guaranteed. Inaccuracies include imprecise location, inconclusive calendar availability and pricing, and presence of redundant or duplicated listings [@insideairbnbDataAssumptions], among others [@Alsudais2020].
+While anonymisation and partial redundancy of the snapshot data are expected, and the ridiculously high prices appearing in the dataset are a way to trick the algorithm [@GutHend2018], the latter two present a major limitation for research and, subsequently, policy-making related to STL (short-term lets). 
+A unique case of data disclosure for London social housing fraud exists [@Hoult2022], but Airbnb generally prevents access to meaningful data and fails to block unlawful listings [@Tims2024]. It displays available dates, merging booked and unavailable into one category. As a result, availability is an unreliable metric. Hosts can keep calendars open year-round and close them near the 90-day limit, and it is unclear where they are on that scale.
+The website features a 90-day counter to block further bookings, visible to hosts only [@airbnbRentHome]. There are many cases of hosts listing the same property multiple times, or both the entire home and individual rooms, to overcome this block. This could lead to over-counting and distorted estimates, pending further analysis.
 
 ## 5. What ethical considerations does the use of the InsideAirbnb data raise? 
 
-Privacy concerns arise as aggregated data risks re-identification, especially in smaller areas or via cross-referencing, raising informed consent issues (source). Biases in the data itself are also a concern, as the data may overrepresent certain neighbourhoods or property types, causing misleading conclusions (Source), (Source). The authors' activist framing suggests a negative view of Airbnb’s effects. It raises reflexivity concerns: are biases fully acknowledged? Benefits to one group may harm others, including Airbnb hosts and related industries. 
-Potential impact of research findings should also be considered. Highlighting STL benefits could worsen gentrification and housing shortages, and policy use of findings may disrupt housing markets - there is a discussion on how recently proposed changes to STL regulation might worsen the housing crisis (source).
-To mitigate these issues, researchers must ensure transparency in their methods and consider the potential harm their findings could cause to local communities (source) (source).
+Privacy concerns arise as aggregated data risks re-identification, especially in smaller areas or via cross-referencing, raising informed consent issues [@Ohm2009]. Biases in the data itself are also a concern, as the data may overrepresent certain neighbourhoods or property types, causing misleading conclusions [@Brenning2023, @insideairbnbDataAssumptions]. The authors' activist framing suggests a negative view of Airbnb’s effects. It raises reflexivity concerns: are biases fully acknowledged? Benefits to one group may harm others, including Airbnb hosts and related industries. 
+Potential impact of research findings should also be considered. Highlighting STL benefits could worsen gentrification and housing shortages, and policy use of findings may disrupt housing markets - there is a discussion on how recently proposed changes to STL regulation might worsen the housing crisis [@londoncouncilsBoroughsShare].
+To mitigate these issues, researchers must ensure transparency in their methods and consider the potential harm their findings could cause to local communities [@Prentice2023, @Alsudais2020].
 
 ## 6. With reference to the InsideAirbnb data (*i.e.* using numbers, figures, maps, and descriptive statistics), what does an analysis of Hosts and Listing types suggest about the nature of Airbnb lets in London? 
 
-We cleaned the InsideAirbnb data by defining active listings as those with recent reviews, removing null price and bed data as errors, and flagging listings available more than the London average (source) as commercial. In 2023, 152,050 nights were booked across 111,880 STLs in London, averaging 5.84 nights per listing. We filtered out listings and hosts with “fair” platform use. Duplicates were detected using a tailored algorithm with 67-74% accuracy, validated via randomized sampling.
+We cleaned the InsideAirbnb data by defining active listings as those with recent reviews, removing null price and bed data as errors, and flagging listings available more than the London average [@onsHostsListings] as commercial. In 2023, 152,050 nights were booked across 111,880 STLs in London, averaging 5.84 nights per listing. We filtered out listings and hosts with “fair” platform use. Duplicates were detected using a tailored algorithm with 67-74% accuracy, validated via randomized sampling.
 
 ```{python}
 #| include: false
@@ -953,12 +955,12 @@ ax.set_ylim(155000, 202000)
 ```
 
 ### Growing number of listings
-We identified 28,207 active London listings in 2024 - 55.22% year-on-year increase. The listings accounted for 0.48% and 0.74% of total dwellings respectively (source, source); entire homes - 0.35% and 0.58% respectively, in contrast to other sources (source1). The central areas exhibit the highest proportion of Airbnb listings relative to total dwellings, and this share increased progressively across these and adjacent boroughs from 2023 to 2024.
+We identified 28,207 active London listings in 2024 - 55.22% year-on-year increase. The listings accounted for 0.48% and 0.74% of total dwellings respectively [@GovUK2012, @powerbiReport2024]; entire homes - 0.35% and 0.58% respectively, in contrast to other sources [@EY_Airbnb_2024]. The central areas exhibit the highest proportion of Airbnb listings relative to total dwellings, and this share increased progressively across these and adjacent boroughs from 2023 to 2024.
 ### Trend towards entire homes
-In 2024, the percentage of entire homes on Airbnb increased to 78%, up from 73% in 2023. The share of private rooms decreased from 26% to 21%, indicating a trend towards more entire homes, which have a greater impact on housing. Some sources suggest STL ease and higher revenue may incentivize removing properties from long-term rental markets (source, source), even if they start STL as a private room. We therefore see the need to expand the methodology to include private rooms into the research scope.
+In 2024, the percentage of entire homes on Airbnb increased to 78%, up from 73% in 2023. The share of private rooms decreased from 26% to 21%, indicating a trend towards more entire homes, which have a greater impact on housing. Some sources suggest STL ease and higher revenue may incentivize removing properties from long-term rental markets [@cromarty2024, @evans2024], even if they start STL as a private room. We therefore see the need to expand the methodology to include private rooms into the research scope.
 ### More multi-listing hosts
 The proportion of multi-listing hosts increased from 53% in 2023 to 57% in 2024, with 36% of these hosts having two listings. The average number of listings per multi-listing host rose from 14.8 to 19.5, and nearly 10% now manage more than 10 listings. Notably, there is growing prevalence of one-bedroom and 3+ bedroom listings, suggesting that multi-listing hosts are increasingly occupying larger homes and one-bedroom properties. This trend may limit access to family-sized housing and properties for first buyers. The high average number of listings likely reflects the involvement of asset management companies, pointing to a trend towards greater commercialisation of the platform.
-We compare our observations with the Airbnb-endorsed studies (source1, source2). As seen from our EDA, the commercial use of the platform is increasing, and the impact on housing could be underestimated. We discuss it further in the next section.
+We compare our observations with the Airbnb-endorsed studies [@EY_Airbnb_2024, @scanlon2024]. As seen from our EDA, the commercial use of the platform is increasing, and the impact on housing could be underestimated. We discuss it further in the next section.
 
 ```{python}
 #| include: false
@@ -1318,11 +1320,11 @@ plt.show()
 ## 7. Drawing on your previous answers, and supporting your response with evidence (*e.g.* figures, maps, EDA/ESDA, and simple statistical analysis/models drawing on experience from, e.g., CASA0007), how *could* the InsideAirbnb data set be used to inform the regulation of Short-Term Lets (STL) in London? 
 
 ### Potential link between STL and housing crisis in London
-Despite a narrowing rent-wage gap, rising living costs force low-income Londoners to spend up to 77% of wages on housing. Higher mortgage rates further exclude many from homeownership, disproportionately impacting vulnerable populations, leading to poverty, evictions, overcrowding, or homelessness (source, source, source, source, source, source, source, source). There are many claims that STLs exacerbate this housing crisis, pushing the demand down to the social and private rental sector.
-In February 2024, the UK government announced reforms requiring planning permission for STLs exceeding 90 nights, and a mandatory STL registration scheme (source) that will close the STL data availability gap, discussed in Q4. Additionally, the furnished holiday lettings tax regime will be abolished (source). These continuous efforts aim to keep homes available for local communities.
-Airbnb claims no link between listing growth and rising housing costs, backed by studies discussed in Q6. A caveat of published studies is their UK-wide statistics for some parameters, which may not reflect London’s heated STL market. With Airbnb comprising 47% of European platform STL supply and 30% across all types, STL impacts on housing may be more significant (source, source).
+Despite a narrowing rent-wage gap, rising living costs force low-income Londoners to spend up to 77% of wages on housing. Higher mortgage rates further exclude many from homeownership, disproportionately impacting vulnerable populations, leading to poverty, evictions, overcrowding, or homelessness [@EY_Airbnb_2024, @scanlon2024, @finnerty2024, @otte2024, @builtassetmanagement2024, @londonassembly2024, @ageuk2024, @kellyk2024, @crisis2024, @bevan2023]. There are many claims that STLs exacerbate this housing crisis, pushing the demand down to the social and private rental sector.
+In February 2024, the UK government announced reforms requiring planning permission for STLs exceeding 90 nights, and a mandatory STL registration scheme [@govuk2024] that will close the STL data availability gap, discussed in Q4. Additionally, the furnished holiday lettings tax regime will be abolished [@govuk_abolition2024]. These continuous efforts aim to keep homes available for local communities.
+Airbnb claims no link between listing growth and rising housing costs, backed by studies discussed in Q6. A caveat of published studies is their UK-wide statistics for some parameters, which may not reflect London’s heated STL market. With Airbnb comprising 47% of European platform STL supply and 30% across all types, STL impacts on housing may be more significant [@lighthouse2021, @laymyhat].
 ### Our research
-We base our research on the independent studies conducted in 2019 and 2020 (source, source). Our goal is to identify proxies accounting for the impacts of the Airbnb listings on housing in London. We utilise the methodology outlined in the articles above.
+We base our research on the independent studies conducted in 2019 and 2020 [@Shabrina2021, @Todd2021]. Our goal is to identify proxies accounting for the impacts of the Airbnb listings on housing in London. We utilise the methodology outlined in the articles above.
 ### Datasets:
 * InsideAirbnb - see Q6 for details.
 * London Boroughs' administrative boundaries provide a foundation for decision-makers to conduct further analysis.
@@ -1737,8 +1739,6 @@ print(vif_data)
 #No signs of multicolinearity 
 ```
 
-**Plotting the residuals**
-
 The model suggests that for every 1% increase in the number of Airbnb listings, the change in rental prices grew by 0.065%. In areas where Airbnb listings would have doubled, featuring 100% increase, rents would have risen by an average of 6.5%. For tenants, this results in significant price increases: in central London, where average rents are around £2,121 per month, a 6.5% rise would add approximately £138 per month, or £1,656 per year. 
 
 Apart from Airbnb impact, the model results also show that neighborhoods closer to the centre see an additional 0.34% increase in rental prices for every kilometer closer. However, the percentage of vacant dwellings showed little connection to rent changes. 
@@ -1835,15 +1835,16 @@ plt.show()
 
 To build on this analysis, future work could explore how neighborhoods influence each other by using tools that better capture these spatial relationships, including Spatial Lag or Spatial Error. Adding more information, including income levels and housing availability, could also help explain why rent changes happen in some places but not others. Additionally, a more robust regression model can be undertaken that accounts for the uneven spread of residuals.
 
-### Potential expansion:
-* Social housing waiting times
-* No-fault evictions
-* Total new rough sleepers
-* Average long-term room rental prices (e.g. from Spareroom)
-* % or N of Houses of Multiple Occupancy (source)
-* % or N of flatshare households
-* Property guardians
-* N of rooms in airbnb compared to n of homes on airbnb
+###Potential analysis expansion:
+Below are the potential additional variables that could be tested in the future in multiple linear regression:
+* Social housing waiting times;
+* No-fault evictions;
+* Total new rough sleepers;
+* Average long-term room rental prices (e.g. from Spareroom);
+* % or N of Houses of Multiple Occupancy;
+* % or N of flatshare households;
+* N of Property guardians;
+* N of rooms in airbnb compared to n of homes on Airbnb.
 
 ### Implications to the regulation of STL in London:
 **Promote casual STLs**
@@ -1863,13 +1864,5 @@ Greater support is needed to encourage property owners to prioritize long-term r
 
 **The landlord should have a choice**
 Under the new rules, homeowners will be able to let their primary residence for up to 90 nights annually without planning permission, and dedicated short-term lets will be automatically reclassified into a new use class. This approach does not provide landlords sufficient time to assess the revenue implications, particularly if proposed incentives for long-term rentals are introduced. The government should reconsider the automatic reclassification of short-term lets.
-
-## Sustainable Authorship Tools
-
-Using the Terminal in Docker, you compile the Quarto report using `quarto render <group_submission_file>.qmd`.
-
-Your QMD file should automatically download your BibTeX and CLS files and any other required files. If this is done right after library loading then the entire report should output successfully.
-
-Written in Markdown and generated from [Quarto](https://quarto.org/). Fonts used: [Spectral](https://fonts.google.com/specimen/Spectral) (mainfont), [Roboto](https://fonts.google.com/specimen/Roboto) (<span style="font-family:Sans-Serif;">sansfont</span>) and [JetBrains Mono](https://fonts.google.com/specimen/JetBrains%20Mono) (`monofont`). 
 
 ## References
